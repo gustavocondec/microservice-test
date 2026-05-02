@@ -50,6 +50,11 @@ let ClientsService = class ClientsService {
         await this.accountsEventsPublisher.publish(contracts_1.KafkaTopics.ClientCreated, event);
         return client;
     }
+    async listClients() {
+        return this.clientRepository.find({
+            order: { createdAt: 'ASC' },
+        });
+    }
 };
 exports.ClientsService = ClientsService;
 exports.ClientsService = ClientsService = __decorate([

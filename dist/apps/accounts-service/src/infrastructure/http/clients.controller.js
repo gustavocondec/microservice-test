@@ -24,6 +24,9 @@ let ClientsController = class ClientsController {
     createClient(dto) {
         return this.clientsService.createClient(dto);
     }
+    listClients() {
+        return this.clientsService.listClients();
+    }
 };
 exports.ClientsController = ClientsController;
 __decorate([
@@ -34,6 +37,13 @@ __decorate([
     __metadata("design:paramtypes", [create_client_dto_1.CreateClientDto]),
     __metadata("design:returntype", void 0)
 ], ClientsController.prototype, "createClient", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Listar clientes' }),
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ClientsController.prototype, "listClients", null);
 exports.ClientsController = ClientsController = __decorate([
     (0, swagger_1.ApiTags)('Clients'),
     (0, common_1.Controller)('clients'),

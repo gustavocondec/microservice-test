@@ -34,6 +34,49 @@ Todos los eventos comparten metadata:
 - `occurredAt`
 - `correlationId`
 
+## Mapa de eventos Kafka
+
+```mermaid
+flowchart LR
+  API[Client/API]
+  ACC[accounts-service]
+  TX[transactions-service]
+  AI[ai-service]
+  EXT[Sin consumidor interno]
+
+  API -->|POST /clients| ACC
+  API -->|POST /accounts| ACC
+  ACC -->|client.created| EXT
+  ACC -->|account.created| EXT
+  ACC -->|balance.updated| EXT
+
+  API -->|POST /transactions| TX
+  TX -->|transaction.requested| ACC
+  ACC -->|transaction.completed| TX
+  ACC -->|transaction.rejected| TX
+  ACC -->|transaction.completed| AI
+  ACC -->|transaction.rejected| AI
+```
+
+## Flujo de alta de cliente y cuenta
+
+```mermaid
+sequenceDiagram
+  participant API as Client/API
+  participant ACC as accounts-service
+  participant K as Kafka
+
+  API->>ACC: POST /clients
+  ACC->>ACC: Validate unique email
+  ACC->>ACC: Save client
+  ACC->>K: client.created
+
+  API->>ACC: POST /accounts
+  ACC->>ACC: Validate client exists
+  ACC->>ACC: Save account
+  ACC->>K: account.created
+```
+
 ## Flujo de una transferencia
 
 1. `transactions-service` recibe `POST /transactions` con `type=TRANSFER`.
@@ -44,6 +87,8 @@ Todos los eventos comparten metadata:
 6. `accounts-service` publica `transaction.completed` o `transaction.rejected`.
 7. `transactions-service` consume ese resultado y actualiza el estado final.
 8. `ai-service` consume el resultado y genera una explicación legible para usuario final.
+
+Nota: `balance.updated` queda publicado en Kafka para auditoría, reporting o futuras integraciones. En la implementación actual del monorepo no hay ningún consumidor interno suscrito a ese tópico.
 
 ```mermaid
 sequenceDiagram
@@ -76,11 +121,40 @@ sequenceDiagram
 
 Por defecto usa `MockLlmProvider`, con una interfaz (`LlmPort`) lista para conectar OpenAI u otro proveedor real sin tocar la lógica de aplicación.
 
+## Flujos de consulta HTTP
+
+```mermaid
+sequenceDiagram
+  participant API as Client/API
+  participant ACC as accounts-service
+  participant TX as transactions-service
+  participant AI as ai-service
+
+  API->>ACC: GET /accounts/:accountId
+  ACC-->>API: Account
+
+  API->>ACC: GET /clients
+  ACC-->>API: Client list
+
+  API->>ACC: GET /clients/:clientId/accounts
+  ACC-->>API: Account list
+
+  API->>TX: GET /transactions/:transactionId
+  TX-->>API: Transaction status
+
+  API->>AI: GET /explanations/transactions/:transactionId
+  AI-->>API: Transaction explanation
+
+  API->>AI: GET /summaries/accounts/:accountId
+  AI-->>API: Account summary
+```
+
 ## Endpoints HTTP
 
 ### accounts-service
 
 - `POST /clients`
+- `GET /clients`
 - `POST /accounts`
 - `GET /accounts/:accountId`
 - `GET /clients/:clientId/accounts`
@@ -112,9 +186,19 @@ Por defecto usa `MockLlmProvider`, con una interfaz (`LlmPort`) lista para conec
 
 Prerequisito: Docker Desktop o Docker Engine levantado.
 
+Modo productivo local, recompilando las imágenes:
+
 ```bash
 docker compose up --build
 ```
+
+Modo desarrollo, con el código local montado en los contenedores y reinicio automático al cambiar archivos `.ts`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Después del primer build en modo desarrollo, los cambios de código deberían tomarse al guardar sin reconstruir la imagen. Si cambias dependencias en `package.json`, vuelve a ejecutar el comando con `--build`.
 
 Servicios expuestos:
 

@@ -46,4 +46,10 @@ export class ClientsService {
 
     return client;
   }
+
+  async listClients(): Promise<ClientEntity[]> {
+    return this.clientRepository.find({
+      order: { createdAt: 'ASC' },
+    });
+  }
 }

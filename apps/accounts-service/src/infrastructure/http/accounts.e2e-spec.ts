@@ -11,6 +11,7 @@ describe('Accounts HTTP API (e2e)', () => {
 
   const clientsService = {
     createClient: jest.fn(),
+    listClients: jest.fn(),
   };
   const accountsService = {
     createAccount: jest.fn(),
@@ -64,5 +65,27 @@ describe('Accounts HTTP API (e2e)', () => {
       .expect(201);
 
     expect(response.body.balance).toBe(100);
+  });
+
+  it('lists clients through HTTP routes', async () => {
+    clientsService.listClients.mockResolvedValue([
+      {
+        id: 'client-1',
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+      },
+    ]);
+
+    const response = await request(app.getHttpServer())
+      .get('/clients')
+      .expect(200);
+
+    expect(response.body).toEqual([
+      {
+        id: 'client-1',
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+      },
+    ]);
   });
 });
