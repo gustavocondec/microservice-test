@@ -1,0 +1,63 @@
+{
+  "name": "arkano-bank-platform",
+  "version": "1.0.0",
+  "description": "Arkano technical challenge implemented as a NestJS microservices monorepo.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "start:dev:accounts": "ts-node -r tsconfig-paths/register apps/accounts-service/src/main.ts",
+    "start:dev:transactions": "ts-node -r tsconfig-paths/register apps/transactions-service/src/main.ts",
+    "start:dev:ai": "ts-node -r tsconfig-paths/register apps/ai-service/src/main.ts",
+    "test": "jest --runInBand",
+    "test:unit": "jest --runInBand --testPathIgnorePatterns=e2e-spec",
+    "test:e2e": "jest --runInBand --testPathPatterns=e2e-spec",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down -v"
+  },
+  "keywords": [
+    "nestjs",
+    "microservices",
+    "kafka",
+    "postgresql",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "dependencies": {
+    "@nestjs/common": "^10.4.22",
+    "@nestjs/config": "^3.3.0",
+    "@nestjs/core": "^10.4.22",
+    "@nestjs/microservices": "^10.4.22",
+    "@nestjs/platform-express": "^10.4.22",
+    "@nestjs/swagger": "^7.4.2",
+    "@nestjs/typeorm": "^10.0.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "swagger-ui-express": "^5.0.1",
+    "typeorm": "^0.3.28",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^10.4.22",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.5.2",
+    "@types/supertest": "^7.2.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.2"
+  }
+}

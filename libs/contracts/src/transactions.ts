@@ -1,0 +1,17 @@
+export enum TransactionType {
+  DEPOSIT = 'DEPOSIT',
+  WITHDRAW = 'WITHDRAW',
+  TRANSFER = 'TRANSFER',
+}
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  REJECTED = 'REJECTED',
+}
+
+export enum TransactionRejectionCode {
+  ACCOUNT_NOT_FOUND = 'ACCOUNT_NOT_FOUND',
+  INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
+  INVALID_REQUEST = 'INVALID_REQUEST',
+}

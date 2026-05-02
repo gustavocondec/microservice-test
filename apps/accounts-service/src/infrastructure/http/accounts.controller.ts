@@ -1,0 +1,30 @@
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { AccountsService } from '../../application/services/accounts.service';
+import { CreateAccountDto } from './dto/create-account.dto';
+
+@ApiTags('Accounts')
+@Controller()
+export class AccountsController {
+  constructor(private readonly accountsService: AccountsService) {}
+
+  @ApiOperation({ summary: 'Crear una cuenta bancaria' })
+  @Post('accounts')
+  createAccount(@Body() dto: CreateAccountDto) {
+    return this.accountsService.createAccount(dto);
+  }
+
+  @ApiOperation({ summary: 'Obtener una cuenta por ID' })
+  @ApiParam({ name: 'accountId', description: 'UUID de la cuenta bancaria' })
+  @Get('accounts/:accountId')
+  getAccount(@Param('accountId') accountId: string) {
+    return this.accountsService.getAccount(accountId);
+  }
+
+  @ApiOperation({ summary: 'Listar cuentas de un cliente' })
+  @ApiParam({ name: 'clientId', description: 'UUID del cliente' })
+  @Get('clients/:clientId/accounts')
+  listAccounts(@Param('clientId') clientId: string) {
+    return this.accountsService.listAccountsByClient(clientId);
+  }
+}
