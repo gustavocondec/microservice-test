@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const contracts_1 = require("../../../../../libs/contracts/src");
 const transactions_service_1 = require("../../application/services/transactions.service");
 const create_transaction_dto_1 = require("./dto/create-transaction.dto");
 let TransactionsController = class TransactionsController {
@@ -31,6 +32,42 @@ let TransactionsController = class TransactionsController {
 exports.TransactionsController = TransactionsController;
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Registrar una nueva transacción' }),
+    (0, swagger_1.ApiBody)({
+        type: create_transaction_dto_1.CreateTransactionDto,
+        examples: {
+            deposit: {
+                summary: 'Depósito',
+                value: {
+                    type: contracts_1.TransactionType.DEPOSIT,
+                    amount: 100,
+                    targetAccountId: 'e9055df1-325c-4ce1-b8fb-c835f0927e8a',
+                    idempotencyKey: 'deposit-001',
+                    correlationId: 'corr-deposit-001',
+                },
+            },
+            withdraw: {
+                summary: 'Retiro',
+                value: {
+                    type: contracts_1.TransactionType.WITHDRAW,
+                    amount: 25,
+                    sourceAccountId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
+                    idempotencyKey: 'withdraw-001',
+                    correlationId: 'corr-withdraw-001',
+                },
+            },
+            transfer: {
+                summary: 'Transferencia',
+                value: {
+                    type: contracts_1.TransactionType.TRANSFER,
+                    amount: 40,
+                    sourceAccountId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
+                    targetAccountId: 'e9055df1-325c-4ce1-b8fb-c835f0927e8a',
+                    idempotencyKey: 'transfer-001',
+                    correlationId: 'corr-transfer-001',
+                },
+            },
+        },
+    }),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),

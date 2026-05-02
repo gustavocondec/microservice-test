@@ -15,7 +15,8 @@
     "test:unit": "jest --runInBand --testPathIgnorePatterns=e2e-spec",
     "test:e2e": "jest --runInBand --testPathPatterns=e2e-spec",
     "docker:up": "docker compose up --build",
-    "docker:down": "docker compose down -v"
+    "docker:down": "docker compose down -v",
+    "docker:dev":"docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build"
   },
   "keywords": [
     "nestjs",

@@ -1,0 +1,87 @@
+{
+  "folders": {
+    "Arkano": {}
+  },
+  "connections": {
+    "postgres-jdbc-arkano-accounts": {
+      "provider": "postgresql",
+      "driver": "postgres-jdbc",
+      "name": "Arkano Accounts DB",
+      "save-password": true,
+      "show-system-objects": false,
+      "folder": "Arkano",
+      "user": "postgres",
+      "configuration": {
+        "host": "accounts-db",
+        "port": "5432",
+        "database": "accounts",
+        "url": "jdbc:postgresql://accounts-db:5432/accounts",
+        "configurationType": "MANUAL",
+        "type": "dev",
+        "auth-model": "native",
+        "provider-properties": {
+          "@dbeaver-show-non-default-db@": "false",
+          "@dbeaver-show-template-db@": "false",
+          "@dbeaver-show-unavailable-db@": "false"
+        }
+      }
+    },
+    "postgres-jdbc-arkano-transactions": {
+      "provider": "postgresql",
+      "driver": "postgres-jdbc",
+      "name": "Arkano Transactions DB",
+      "save-password": true,
+      "show-system-objects": false,
+      "folder": "Arkano",
+      "user": "postgres",
+      "configuration": {
+        "host": "transactions-db",
+        "port": "5432",
+        "database": "transactions",
+        "url": "jdbc:postgresql://transactions-db:5432/transactions",
+        "configurationType": "MANUAL",
+        "type": "dev",
+        "auth-model": "native",
+        "provider-properties": {
+          "@dbeaver-show-non-default-db@": "false",
+          "@dbeaver-show-template-db@": "false",
+          "@dbeaver-show-unavailable-db@": "false"
+        }
+      }
+    },
+    "postgres-jdbc-arkano-ai": {
+      "provider": "postgresql",
+      "driver": "postgres-jdbc",
+      "name": "Arkano AI DB",
+      "save-password": true,
+      "show-system-objects": false,
+      "folder": "Arkano",
+      "user": "postgres",
+      "configuration": {
+        "host": "ai-db",
+        "port": "5432",
+        "database": "ai",
+        "url": "jdbc:postgresql://ai-db:5432/ai",
+        "configurationType": "MANUAL",
+        "type": "dev",
+        "auth-model": "native",
+        "provider-properties": {
+          "@dbeaver-show-non-default-db@": "false",
+          "@dbeaver-show-template-db@": "false",
+          "@dbeaver-show-unavailable-db@": "false"
+        }
+      }
+    }
+  },
+  "connection-types": {
+    "dev": {
+      "name": "Development",
+      "color": "255,255,255",
+      "description": "Local development database",
+      "auto-commit": true,
+      "confirm-execute": false,
+      "confirm-data-change": false,
+      "auto-close-transactions": false
+    }
+  }
+}
