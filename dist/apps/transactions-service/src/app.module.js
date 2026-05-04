@@ -14,7 +14,10 @@ const shared_1 = require("../../../libs/shared/src");
 const processed_events_port_1 = require("./application/ports/processed-events.port");
 const transactions_events_port_1 = require("./application/ports/transactions-events.port");
 const transactions_repository_1 = require("./application/ports/transactions.repository");
-const transactions_service_1 = require("./application/services/transactions.service");
+const create_transaction_use_case_1 = require("./application/use-cases/create-transaction.use-case");
+const get_transaction_use_case_1 = require("./application/use-cases/get-transaction.use-case");
+const handle_transaction_completed_use_case_1 = require("./application/use-cases/handle-transaction-completed.use-case");
+const handle_transaction_rejected_use_case_1 = require("./application/use-cases/handle-transaction-rejected.use-case");
 const health_controller_1 = require("./infrastructure/http/health.controller");
 const transactions_controller_1 = require("./infrastructure/http/transactions.controller");
 const transactions_events_publisher_1 = require("./infrastructure/messaging/transactions-events.publisher");
@@ -43,9 +46,24 @@ exports.AppModule = AppModule = __decorate([
         ],
         providers: [
             {
-                provide: transactions_service_1.TransactionsService,
-                useFactory: (transactionRepository, processedEventsService, transactionsEventsPublisher) => new transactions_service_1.TransactionsService(transactionRepository, processedEventsService, transactionsEventsPublisher),
-                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, transactions_events_port_1.TRANSACTIONS_EVENTS_PORT],
+                provide: create_transaction_use_case_1.CreateTransactionUseCase,
+                useFactory: (transactionRepository, transactionsEventsPublisher) => new create_transaction_use_case_1.CreateTransactionUseCase(transactionRepository, transactionsEventsPublisher),
+                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY, transactions_events_port_1.TRANSACTIONS_EVENTS_PORT],
+            },
+            {
+                provide: get_transaction_use_case_1.GetTransactionUseCase,
+                useFactory: (transactionRepository) => new get_transaction_use_case_1.GetTransactionUseCase(transactionRepository),
+                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY],
+            },
+            {
+                provide: handle_transaction_completed_use_case_1.HandleTransactionCompletedUseCase,
+                useFactory: (transactionRepository, processedEventsService, getTransactionUseCase) => new handle_transaction_completed_use_case_1.HandleTransactionCompletedUseCase(transactionRepository, processedEventsService, getTransactionUseCase),
+                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, get_transaction_use_case_1.GetTransactionUseCase],
+            },
+            {
+                provide: handle_transaction_rejected_use_case_1.HandleTransactionRejectedUseCase,
+                useFactory: (transactionRepository, processedEventsService, getTransactionUseCase) => new handle_transaction_rejected_use_case_1.HandleTransactionRejectedUseCase(transactionRepository, processedEventsService, getTransactionUseCase),
+                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, get_transaction_use_case_1.GetTransactionUseCase],
             },
             typeorm_transactions_repository_1.TypeOrmTransactionsRepository,
             transactions_events_publisher_1.TransactionsEventsPublisher,

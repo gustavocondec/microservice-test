@@ -15,9 +15,12 @@ import {
 } from './application/ports/accounts.repository';
 import { CLIENTS_REPOSITORY } from './application/ports/clients.repository';
 import { PROCESSED_EVENTS_PORT } from './application/ports/processed-events.port';
-import { AccountsService } from './application/services/accounts.service';
-import { ClientsService } from './application/services/clients.service';
-import { TransactionOrchestratorService } from './application/services/transaction-orchestrator.service';
+import { CreateAccountUseCase } from './application/use-cases/create-account.use-case';
+import { CreateClientUseCase } from './application/use-cases/create-client.use-case';
+import { GetAccountUseCase } from './application/use-cases/get-account.use-case';
+import { HandleTransactionRequestedUseCase } from './application/use-cases/handle-transaction-requested.use-case';
+import { ListAccountsByClientUseCase } from './application/use-cases/list-accounts-by-client.use-case';
+import { ListClientsUseCase } from './application/use-cases/list-clients.use-case';
 import { AccountsController } from './infrastructure/http/accounts.controller';
 import { ClientsController } from './infrastructure/http/clients.controller';
 import { HealthController } from './infrastructure/http/health.controller';
@@ -55,21 +58,37 @@ import { TypeOrmClientsRepository } from './infrastructure/persistence/typeorm-c
   ],
   providers: [
     {
-      provide: ClientsService,
+      provide: CreateClientUseCase,
       useFactory: (clientRepository, accountsEventsPublisher) =>
-        new ClientsService(clientRepository, accountsEventsPublisher),
+        new CreateClientUseCase(clientRepository, accountsEventsPublisher),
       inject: [CLIENTS_REPOSITORY, ACCOUNTS_EVENTS_PORT],
     },
     {
-      provide: AccountsService,
+      provide: ListClientsUseCase,
+      useFactory: (clientRepository) => new ListClientsUseCase(clientRepository),
+      inject: [CLIENTS_REPOSITORY],
+    },
+    {
+      provide: CreateAccountUseCase,
       useFactory: (accountRepository, clientRepository, accountsEventsPublisher) =>
-        new AccountsService(accountRepository, clientRepository, accountsEventsPublisher),
+        new CreateAccountUseCase(accountRepository, clientRepository, accountsEventsPublisher),
       inject: [ACCOUNTS_REPOSITORY, CLIENTS_REPOSITORY, ACCOUNTS_EVENTS_PORT],
     },
     {
-      provide: TransactionOrchestratorService,
+      provide: GetAccountUseCase,
+      useFactory: (accountRepository) => new GetAccountUseCase(accountRepository),
+      inject: [ACCOUNTS_REPOSITORY],
+    },
+    {
+      provide: ListAccountsByClientUseCase,
+      useFactory: (accountRepository, clientRepository) =>
+        new ListAccountsByClientUseCase(accountRepository, clientRepository),
+      inject: [ACCOUNTS_REPOSITORY, CLIENTS_REPOSITORY],
+    },
+    {
+      provide: HandleTransactionRequestedUseCase,
       useFactory: (accountsUnitOfWork, processedEventsService, accountsEventsPublisher) =>
-        new TransactionOrchestratorService(
+        new HandleTransactionRequestedUseCase(
           accountsUnitOfWork,
           processedEventsService,
           accountsEventsPublisher,

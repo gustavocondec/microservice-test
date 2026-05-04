@@ -24,16 +24,14 @@ type AccountMutationResult = {
   finalEvent: DomainEvent<TransactionCompletedPayload> | DomainEvent<TransactionRejectedPayload>;
 };
 
-export class TransactionOrchestratorService {
+export class HandleTransactionRequestedUseCase {
   constructor(
     private readonly accountsUnitOfWork: AccountsUnitOfWork,
     private readonly processedEventsService: ProcessedEventsPort,
     private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async handleTransactionRequested(
-    event: DomainEvent<TransactionRequestedPayload>,
-  ): Promise<void> {
+  async execute(event: DomainEvent<TransactionRequestedPayload>): Promise<void> {
     if (await this.processedEventsService.hasProcessed(event.metadata.eventId)) {
       return;
     }

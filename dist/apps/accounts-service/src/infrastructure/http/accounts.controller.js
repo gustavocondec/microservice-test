@@ -15,25 +15,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccountsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const accounts_service_1 = require("../../application/services/accounts.service");
+const create_account_use_case_1 = require("../../application/use-cases/create-account.use-case");
+const get_account_use_case_1 = require("../../application/use-cases/get-account.use-case");
+const list_accounts_by_client_use_case_1 = require("../../application/use-cases/list-accounts-by-client.use-case");
 const accounts_exception_filter_1 = require("./accounts-exception.filter");
 const create_account_dto_1 = require("./dto/create-account.dto");
 let AccountsController = class AccountsController {
-    constructor(accountsService) {
-        this.accountsService = accountsService;
+    constructor(createAccountUseCase, getAccountUseCase, listAccountsByClientUseCase) {
+        this.createAccountUseCase = createAccountUseCase;
+        this.getAccountUseCase = getAccountUseCase;
+        this.listAccountsByClientUseCase = listAccountsByClientUseCase;
     }
     createAccount(dto) {
-        return this.accountsService.createAccount({
+        return this.createAccountUseCase.execute({
             clientId: dto.clientId,
             currency: dto.currency,
             initialBalance: dto.initialBalance,
         });
     }
     getAccount(accountId) {
-        return this.accountsService.getAccount(accountId);
+        return this.getAccountUseCase.execute(accountId);
     }
     listAccounts(clientId) {
-        return this.accountsService.listAccountsByClient(clientId);
+        return this.listAccountsByClientUseCase.execute(clientId);
     }
 };
 exports.AccountsController = AccountsController;
@@ -67,5 +71,7 @@ exports.AccountsController = AccountsController = __decorate([
     (0, swagger_1.ApiTags)('Accounts'),
     (0, common_1.UseFilters)(accounts_exception_filter_1.AccountsExceptionFilter),
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [accounts_service_1.AccountsService])
+    __metadata("design:paramtypes", [create_account_use_case_1.CreateAccountUseCase,
+        get_account_use_case_1.GetAccountUseCase,
+        list_accounts_by_client_use_case_1.ListAccountsByClientUseCase])
 ], AccountsController);

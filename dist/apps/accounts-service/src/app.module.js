@@ -15,9 +15,12 @@ const accounts_events_port_1 = require("./application/ports/accounts-events.port
 const accounts_repository_1 = require("./application/ports/accounts.repository");
 const clients_repository_1 = require("./application/ports/clients.repository");
 const processed_events_port_1 = require("./application/ports/processed-events.port");
-const accounts_service_1 = require("./application/services/accounts.service");
-const clients_service_1 = require("./application/services/clients.service");
-const transaction_orchestrator_service_1 = require("./application/services/transaction-orchestrator.service");
+const create_account_use_case_1 = require("./application/use-cases/create-account.use-case");
+const create_client_use_case_1 = require("./application/use-cases/create-client.use-case");
+const get_account_use_case_1 = require("./application/use-cases/get-account.use-case");
+const handle_transaction_requested_use_case_1 = require("./application/use-cases/handle-transaction-requested.use-case");
+const list_accounts_by_client_use_case_1 = require("./application/use-cases/list-accounts-by-client.use-case");
+const list_clients_use_case_1 = require("./application/use-cases/list-clients.use-case");
 const accounts_controller_1 = require("./infrastructure/http/accounts.controller");
 const clients_controller_1 = require("./infrastructure/http/clients.controller");
 const health_controller_1 = require("./infrastructure/http/health.controller");
@@ -50,18 +53,33 @@ exports.AppModule = AppModule = __decorate([
         ],
         providers: [
             {
-                provide: clients_service_1.ClientsService,
-                useFactory: (clientRepository, accountsEventsPublisher) => new clients_service_1.ClientsService(clientRepository, accountsEventsPublisher),
+                provide: create_client_use_case_1.CreateClientUseCase,
+                useFactory: (clientRepository, accountsEventsPublisher) => new create_client_use_case_1.CreateClientUseCase(clientRepository, accountsEventsPublisher),
                 inject: [clients_repository_1.CLIENTS_REPOSITORY, accounts_events_port_1.ACCOUNTS_EVENTS_PORT],
             },
             {
-                provide: accounts_service_1.AccountsService,
-                useFactory: (accountRepository, clientRepository, accountsEventsPublisher) => new accounts_service_1.AccountsService(accountRepository, clientRepository, accountsEventsPublisher),
+                provide: list_clients_use_case_1.ListClientsUseCase,
+                useFactory: (clientRepository) => new list_clients_use_case_1.ListClientsUseCase(clientRepository),
+                inject: [clients_repository_1.CLIENTS_REPOSITORY],
+            },
+            {
+                provide: create_account_use_case_1.CreateAccountUseCase,
+                useFactory: (accountRepository, clientRepository, accountsEventsPublisher) => new create_account_use_case_1.CreateAccountUseCase(accountRepository, clientRepository, accountsEventsPublisher),
                 inject: [accounts_repository_1.ACCOUNTS_REPOSITORY, clients_repository_1.CLIENTS_REPOSITORY, accounts_events_port_1.ACCOUNTS_EVENTS_PORT],
             },
             {
-                provide: transaction_orchestrator_service_1.TransactionOrchestratorService,
-                useFactory: (accountsUnitOfWork, processedEventsService, accountsEventsPublisher) => new transaction_orchestrator_service_1.TransactionOrchestratorService(accountsUnitOfWork, processedEventsService, accountsEventsPublisher),
+                provide: get_account_use_case_1.GetAccountUseCase,
+                useFactory: (accountRepository) => new get_account_use_case_1.GetAccountUseCase(accountRepository),
+                inject: [accounts_repository_1.ACCOUNTS_REPOSITORY],
+            },
+            {
+                provide: list_accounts_by_client_use_case_1.ListAccountsByClientUseCase,
+                useFactory: (accountRepository, clientRepository) => new list_accounts_by_client_use_case_1.ListAccountsByClientUseCase(accountRepository, clientRepository),
+                inject: [accounts_repository_1.ACCOUNTS_REPOSITORY, clients_repository_1.CLIENTS_REPOSITORY],
+            },
+            {
+                provide: handle_transaction_requested_use_case_1.HandleTransactionRequestedUseCase,
+                useFactory: (accountsUnitOfWork, processedEventsService, accountsEventsPublisher) => new handle_transaction_requested_use_case_1.HandleTransactionRequestedUseCase(accountsUnitOfWork, processedEventsService, accountsEventsPublisher),
                 inject: [accounts_repository_1.ACCOUNTS_UNIT_OF_WORK, processed_events_port_1.PROCESSED_EVENTS_PORT, accounts_events_port_1.ACCOUNTS_EVENTS_PORT],
             },
             typeorm_clients_repository_1.TypeOrmClientsRepository,

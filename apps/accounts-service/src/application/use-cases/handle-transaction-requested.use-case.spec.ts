@@ -4,9 +4,9 @@ import {
   TransactionType,
   type TransactionRequestedPayload,
 } from '@app/contracts';
-import { TransactionOrchestratorService } from './transaction-orchestrator.service';
+import { HandleTransactionRequestedUseCase } from './handle-transaction-requested.use-case';
 
-describe('TransactionOrchestratorService', () => {
+describe('HandleTransactionRequestedUseCase', () => {
   const processedEventsService = {
     hasProcessed: jest.fn(),
     markProcessed: jest.fn(),
@@ -53,13 +53,13 @@ describe('TransactionOrchestratorService', () => {
 
     processedEventsService.hasProcessed.mockResolvedValue(false);
 
-    const service = new TransactionOrchestratorService(
+    const useCase = new HandleTransactionRequestedUseCase(
       accountsUnitOfWork as never,
       processedEventsService as never,
       accountsEventsPublisher as never,
     );
 
-    await service.handleTransactionRequested(
+    await useCase.execute(
       buildEvent({
         type: TransactionType.WITHDRAW,
         sourceAccountId: 'acc-1',
@@ -108,13 +108,13 @@ describe('TransactionOrchestratorService', () => {
 
     processedEventsService.hasProcessed.mockResolvedValue(false);
 
-    const service = new TransactionOrchestratorService(
+    const useCase = new HandleTransactionRequestedUseCase(
       accountsUnitOfWork as never,
       processedEventsService as never,
       accountsEventsPublisher as never,
     );
 
-    await service.handleTransactionRequested(
+    await useCase.execute(
       buildEvent({
         type: TransactionType.TRANSFER,
         sourceAccountId: 'acc-1',

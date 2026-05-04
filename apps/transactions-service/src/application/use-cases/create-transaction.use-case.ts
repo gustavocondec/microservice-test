@@ -2,15 +2,11 @@ import { randomUUID } from 'crypto';
 import {
   type DomainEvent,
   KafkaTopics,
-  type TransactionCompletedPayload,
-  type TransactionRejectedPayload,
   type TransactionRequestedPayload,
   TransactionStatus,
   TransactionType,
 } from '@app/contracts';
 import { InvalidTransactionError } from '../../domain/errors/invalid-transaction.error';
-import { TransactionNotFoundError } from '../../domain/errors/transaction-not-found.error';
-import { type ProcessedEventsPort } from '../ports/processed-events.port';
 import { type TransactionsEventsPort } from '../ports/transactions-events.port';
 import {
   type TransactionRecord,
@@ -26,14 +22,13 @@ export type CreateTransactionInput = {
   correlationId?: string;
 };
 
-export class TransactionsService {
+export class CreateTransactionUseCase {
   constructor(
     private readonly transactionRepository: TransactionsRepository,
-    private readonly processedEventsService: ProcessedEventsPort,
     private readonly transactionsEventsPublisher: TransactionsEventsPort,
   ) {}
 
-  async createTransaction(input: CreateTransactionInput): Promise<TransactionRecord> {
+  async execute(input: CreateTransactionInput): Promise<TransactionRecord> {
     this.validateTransactionRequest(input);
 
     const existingTransaction = await this.transactionRepository.findByIdempotencyKey(
@@ -75,56 +70,6 @@ export class TransactionsService {
     await this.transactionsEventsPublisher.publish(KafkaTopics.TransactionRequested, event);
 
     return transaction;
-  }
-
-  async getTransaction(transactionId: string): Promise<TransactionRecord> {
-    const transaction = await this.transactionRepository.findById(transactionId);
-
-    if (!transaction) {
-      throw new TransactionNotFoundError();
-    }
-
-    return transaction;
-  }
-
-  async handleTransactionCompleted(
-    event: DomainEvent<TransactionCompletedPayload>,
-  ): Promise<void> {
-    if (await this.processedEventsService.hasProcessed(event.metadata.eventId)) {
-      return;
-    }
-
-    const transaction = await this.getTransaction(event.payload.transactionId);
-
-    transaction.status = TransactionStatus.COMPLETED;
-    transaction.rejectionCode = null;
-    transaction.rejectionMessage = null;
-
-    await this.transactionRepository.save(transaction);
-    await this.processedEventsService.markProcessed(
-      event.metadata.eventId,
-      event.metadata.eventType,
-    );
-  }
-
-  async handleTransactionRejected(
-    event: DomainEvent<TransactionRejectedPayload>,
-  ): Promise<void> {
-    if (await this.processedEventsService.hasProcessed(event.metadata.eventId)) {
-      return;
-    }
-
-    const transaction = await this.getTransaction(event.payload.transactionId);
-
-    transaction.status = TransactionStatus.REJECTED;
-    transaction.rejectionCode = event.payload.reasonCode;
-    transaction.rejectionMessage = event.payload.reasonMessage;
-
-    await this.transactionRepository.save(transaction);
-    await this.processedEventsService.markProcessed(
-      event.metadata.eventId,
-      event.metadata.eventType,
-    );
   }
 
   private validateTransactionRequest(input: CreateTransactionInput): void {

@@ -1,8 +1,8 @@
 import { TransactionStatus, TransactionType } from '@app/contracts';
 import { InvalidTransactionError } from '../../domain/errors/invalid-transaction.error';
-import { TransactionsService } from './transactions.service';
+import { CreateTransactionUseCase } from './create-transaction.use-case';
 
-describe('TransactionsService', () => {
+describe('CreateTransactionUseCase', () => {
   const transactionRepository = {
     findById: jest.fn(),
     findByIdempotencyKey: jest.fn(),
@@ -13,21 +13,16 @@ describe('TransactionsService', () => {
     })),
     save: jest.fn(async (value) => value),
   };
-  const processedEventsService = {
-    hasProcessed: jest.fn(),
-    markProcessed: jest.fn(),
-  };
   const eventsPublisher = {
     publish: jest.fn(),
   };
 
-  let service: TransactionsService;
+  let useCase: CreateTransactionUseCase;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new TransactionsService(
+    useCase = new CreateTransactionUseCase(
       transactionRepository as never,
-      processedEventsService as never,
       eventsPublisher as never,
     );
   });
@@ -41,7 +36,7 @@ describe('TransactionsService', () => {
 
     transactionRepository.findByIdempotencyKey.mockResolvedValue(existingTransaction);
 
-    const result = await service.createTransaction({
+    const result = await useCase.execute({
       type: TransactionType.DEPOSIT,
       amount: 30,
       targetAccountId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
@@ -54,7 +49,7 @@ describe('TransactionsService', () => {
 
   it('rejects invalid transfers that reuse the same account', async () => {
     await expect(
-      service.createTransaction({
+      useCase.execute({
         type: TransactionType.TRANSFER,
         amount: 10,
         sourceAccountId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',

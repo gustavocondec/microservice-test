@@ -15,21 +15,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const clients_service_1 = require("../../application/services/clients.service");
+const create_client_use_case_1 = require("../../application/use-cases/create-client.use-case");
+const list_clients_use_case_1 = require("../../application/use-cases/list-clients.use-case");
 const accounts_exception_filter_1 = require("./accounts-exception.filter");
 const create_client_dto_1 = require("./dto/create-client.dto");
 let ClientsController = class ClientsController {
-    constructor(clientsService) {
-        this.clientsService = clientsService;
+    constructor(createClientUseCase, listClientsUseCase) {
+        this.createClientUseCase = createClientUseCase;
+        this.listClientsUseCase = listClientsUseCase;
     }
     createClient(dto) {
-        return this.clientsService.createClient({
+        return this.createClientUseCase.execute({
             name: dto.name,
             email: dto.email,
         });
     }
     listClients() {
-        return this.clientsService.listClients();
+        return this.listClientsUseCase.execute();
     }
 };
 exports.ClientsController = ClientsController;
@@ -52,5 +54,6 @@ exports.ClientsController = ClientsController = __decorate([
     (0, swagger_1.ApiTags)('Clients'),
     (0, common_1.UseFilters)(accounts_exception_filter_1.AccountsExceptionFilter),
     (0, common_1.Controller)('clients'),
-    __metadata("design:paramtypes", [clients_service_1.ClientsService])
+    __metadata("design:paramtypes", [create_client_use_case_1.CreateClientUseCase,
+        list_clients_use_case_1.ListClientsUseCase])
 ], ClientsController);

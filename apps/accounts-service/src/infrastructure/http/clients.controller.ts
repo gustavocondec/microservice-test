@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, UseFilters } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ClientsService } from '../../application/services/clients.service';
+import { CreateClientUseCase } from '../../application/use-cases/create-client.use-case';
+import { ListClientsUseCase } from '../../application/use-cases/list-clients.use-case';
 import { AccountsExceptionFilter } from './accounts-exception.filter';
 import { CreateClientDto } from './dto/create-client.dto';
 
@@ -8,12 +9,15 @@ import { CreateClientDto } from './dto/create-client.dto';
 @UseFilters(AccountsExceptionFilter)
 @Controller('clients')
 export class ClientsController {
-  constructor(private readonly clientsService: ClientsService) {}
+  constructor(
+    private readonly createClientUseCase: CreateClientUseCase,
+    private readonly listClientsUseCase: ListClientsUseCase,
+  ) {}
 
   @ApiOperation({ summary: 'Registrar un nuevo cliente' })
   @Post()
   createClient(@Body() dto: CreateClientDto) {
-    return this.clientsService.createClient({
+    return this.createClientUseCase.execute({
       name: dto.name,
       email: dto.email,
     });
@@ -22,6 +26,6 @@ export class ClientsController {
   @ApiOperation({ summary: 'Listar clientes' })
   @Get()
   listClients() {
-    return this.clientsService.listClients();
+    return this.listClientsUseCase.execute();
   }
 }

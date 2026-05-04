@@ -16,16 +16,18 @@ exports.AiConsumerController = void 0;
 const common_1 = require("@nestjs/common");
 const microservices_1 = require("@nestjs/microservices");
 const contracts_1 = require("../../../../../libs/contracts/src");
-const ai_insights_service_1 = require("../../application/services/ai-insights.service");
+const handle_transaction_completed_use_case_1 = require("../../application/use-cases/handle-transaction-completed.use-case");
+const handle_transaction_rejected_use_case_1 = require("../../application/use-cases/handle-transaction-rejected.use-case");
 let AiConsumerController = class AiConsumerController {
-    constructor(aiInsightsService) {
-        this.aiInsightsService = aiInsightsService;
+    constructor(handleTransactionCompletedUseCase, handleTransactionRejectedUseCase) {
+        this.handleTransactionCompletedUseCase = handleTransactionCompletedUseCase;
+        this.handleTransactionRejectedUseCase = handleTransactionRejectedUseCase;
     }
     async handleTransactionCompleted(event) {
-        await this.aiInsightsService.handleTransactionCompleted(event);
+        await this.handleTransactionCompletedUseCase.execute(event);
     }
     async handleTransactionRejected(event) {
-        await this.aiInsightsService.handleTransactionRejected(event);
+        await this.handleTransactionRejectedUseCase.execute(event);
     }
 };
 exports.AiConsumerController = AiConsumerController;
@@ -45,5 +47,6 @@ __decorate([
 ], AiConsumerController.prototype, "handleTransactionRejected", null);
 exports.AiConsumerController = AiConsumerController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [ai_insights_service_1.AiInsightsService])
+    __metadata("design:paramtypes", [handle_transaction_completed_use_case_1.HandleTransactionCompletedUseCase,
+        handle_transaction_rejected_use_case_1.HandleTransactionRejectedUseCase])
 ], AiConsumerController);

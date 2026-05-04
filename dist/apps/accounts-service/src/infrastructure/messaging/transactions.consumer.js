@@ -16,13 +16,13 @@ exports.TransactionsConsumerController = void 0;
 const common_1 = require("@nestjs/common");
 const microservices_1 = require("@nestjs/microservices");
 const contracts_1 = require("../../../../../libs/contracts/src");
-const transaction_orchestrator_service_1 = require("../../application/services/transaction-orchestrator.service");
+const handle_transaction_requested_use_case_1 = require("../../application/use-cases/handle-transaction-requested.use-case");
 let TransactionsConsumerController = class TransactionsConsumerController {
-    constructor(transactionOrchestratorService) {
-        this.transactionOrchestratorService = transactionOrchestratorService;
+    constructor(handleTransactionRequestedUseCase) {
+        this.handleTransactionRequestedUseCase = handleTransactionRequestedUseCase;
     }
     async handleTransactionRequested(event) {
-        await this.transactionOrchestratorService.handleTransactionRequested(event);
+        await this.handleTransactionRequestedUseCase.execute(event);
     }
 };
 exports.TransactionsConsumerController = TransactionsConsumerController;
@@ -35,5 +35,5 @@ __decorate([
 ], TransactionsConsumerController.prototype, "handleTransactionRequested", null);
 exports.TransactionsConsumerController = TransactionsConsumerController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [transaction_orchestrator_service_1.TransactionOrchestratorService])
+    __metadata("design:paramtypes", [handle_transaction_requested_use_case_1.HandleTransactionRequestedUseCase])
 ], TransactionsConsumerController);

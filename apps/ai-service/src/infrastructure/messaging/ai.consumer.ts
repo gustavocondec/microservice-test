@@ -6,23 +6,27 @@ import {
   type TransactionCompletedPayload,
   type TransactionRejectedPayload,
 } from '@app/contracts';
-import { AiInsightsService } from '../../application/services/ai-insights.service';
+import { HandleTransactionCompletedUseCase } from '../../application/use-cases/handle-transaction-completed.use-case';
+import { HandleTransactionRejectedUseCase } from '../../application/use-cases/handle-transaction-rejected.use-case';
 
 @Controller()
 export class AiConsumerController {
-  constructor(private readonly aiInsightsService: AiInsightsService) {}
+  constructor(
+    private readonly handleTransactionCompletedUseCase: HandleTransactionCompletedUseCase,
+    private readonly handleTransactionRejectedUseCase: HandleTransactionRejectedUseCase,
+  ) {}
 
   @EventPattern(KafkaTopics.TransactionCompleted)
   async handleTransactionCompleted(
     @Payload() event: DomainEvent<TransactionCompletedPayload>,
   ): Promise<void> {
-    await this.aiInsightsService.handleTransactionCompleted(event);
+    await this.handleTransactionCompletedUseCase.execute(event);
   }
 
   @EventPattern(KafkaTopics.TransactionRejected)
   async handleTransactionRejected(
     @Payload() event: DomainEvent<TransactionRejectedPayload>,
   ): Promise<void> {
-    await this.aiInsightsService.handleTransactionRejected(event);
+    await this.handleTransactionRejectedUseCase.execute(event);
   }
 }

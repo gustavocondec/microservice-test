@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, Post, UseFilters } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { TransactionType } from '@app/contracts';
-import { TransactionsService } from '../../application/services/transactions.service';
+import { CreateTransactionUseCase } from '../../application/use-cases/create-transaction.use-case';
+import { GetTransactionUseCase } from '../../application/use-cases/get-transaction.use-case';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionsExceptionFilter } from './transactions-exception.filter';
 
@@ -9,7 +10,10 @@ import { TransactionsExceptionFilter } from './transactions-exception.filter';
 @UseFilters(TransactionsExceptionFilter)
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly transactionsService: TransactionsService) {}
+  constructor(
+    private readonly createTransactionUseCase: CreateTransactionUseCase,
+    private readonly getTransactionUseCase: GetTransactionUseCase,
+  ) {}
 
   @ApiOperation({ summary: 'Registrar una nueva transacción' })
   @ApiBody({
@@ -50,7 +54,7 @@ export class TransactionsController {
   })
   @Post()
   createTransaction(@Body() dto: CreateTransactionDto) {
-    return this.transactionsService.createTransaction({
+    return this.createTransactionUseCase.execute({
       type: dto.type,
       amount: dto.amount,
       sourceAccountId: dto.sourceAccountId,
@@ -64,6 +68,6 @@ export class TransactionsController {
   @ApiParam({ name: 'transactionId', description: 'UUID de la transacción' })
   @Get(':transactionId')
   getTransaction(@Param('transactionId') transactionId: string) {
-    return this.transactionsService.getTransaction(transactionId);
+    return this.getTransactionUseCase.execute(transactionId);
   }
 }

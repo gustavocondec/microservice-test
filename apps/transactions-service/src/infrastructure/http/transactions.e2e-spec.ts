@@ -1,21 +1,23 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { TransactionsService } from '../../application/services/transactions.service';
+import { CreateTransactionUseCase } from '../../application/use-cases/create-transaction.use-case';
+import { GetTransactionUseCase } from '../../application/use-cases/get-transaction.use-case';
 import { TransactionsController } from './transactions.controller';
 
 describe('Transactions HTTP API (e2e)', () => {
   let app: INestApplication;
 
-  const transactionsService = {
-    createTransaction: jest.fn(),
-    getTransaction: jest.fn(),
-  };
+  const createTransactionUseCase = { execute: jest.fn() };
+  const getTransactionUseCase = { execute: jest.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [TransactionsController],
-      providers: [{ provide: TransactionsService, useValue: transactionsService }],
+      providers: [
+        { provide: CreateTransactionUseCase, useValue: createTransactionUseCase },
+        { provide: GetTransactionUseCase, useValue: getTransactionUseCase },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();
@@ -28,12 +30,12 @@ describe('Transactions HTTP API (e2e)', () => {
   });
 
   it('creates and fetches transactions through HTTP routes', async () => {
-    transactionsService.createTransaction.mockResolvedValue({
+    createTransactionUseCase.execute.mockResolvedValue({
       id: 'tx-1',
       status: 'PENDING',
       amount: 25,
     });
-    transactionsService.getTransaction.mockResolvedValue({
+    getTransactionUseCase.execute.mockResolvedValue({
       id: 'tx-1',
       status: 'COMPLETED',
       amount: 25,

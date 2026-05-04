@@ -8,9 +8,12 @@ import {
   ProcessedEventsService,
 } from '@app/shared';
 import { AI_INSIGHTS_REPOSITORY } from './application/ports/ai-insights.repository';
-import { AiInsightsService } from './application/services/ai-insights.service';
 import { LLM_PORT } from './application/ports/llm.port';
 import { PROCESSED_EVENTS_PORT } from './application/ports/processed-events.port';
+import { GetTransactionExplanationUseCase } from './application/use-cases/get-transaction-explanation.use-case';
+import { HandleTransactionCompletedUseCase } from './application/use-cases/handle-transaction-completed.use-case';
+import { HandleTransactionRejectedUseCase } from './application/use-cases/handle-transaction-rejected.use-case';
+import { SummarizeAccountUseCase } from './application/use-cases/summarize-account.use-case';
 import { AiController } from './infrastructure/http/ai.controller';
 import { HealthController } from './infrastructure/http/health.controller';
 import { MockLlmProvider } from './infrastructure/llm/mock-llm.provider';
@@ -36,9 +39,35 @@ import { TypeOrmAiInsightsRepository } from './infrastructure/persistence/typeor
   controllers: [AiController, HealthController, AiConsumerController],
   providers: [
     {
-      provide: AiInsightsService,
+      provide: GetTransactionExplanationUseCase,
+      useFactory: (aiInsightRepository) =>
+        new GetTransactionExplanationUseCase(aiInsightRepository),
+      inject: [AI_INSIGHTS_REPOSITORY],
+    },
+    {
+      provide: SummarizeAccountUseCase,
+      useFactory: (aiInsightRepository, llmPort) =>
+        new SummarizeAccountUseCase(aiInsightRepository, llmPort),
+      inject: [AI_INSIGHTS_REPOSITORY, LLM_PORT],
+    },
+    {
+      provide: HandleTransactionCompletedUseCase,
       useFactory: (aiInsightRepository, processedEventsService, llmPort) =>
-        new AiInsightsService(aiInsightRepository, processedEventsService, llmPort),
+        new HandleTransactionCompletedUseCase(
+          aiInsightRepository,
+          processedEventsService,
+          llmPort,
+        ),
+      inject: [AI_INSIGHTS_REPOSITORY, PROCESSED_EVENTS_PORT, LLM_PORT],
+    },
+    {
+      provide: HandleTransactionRejectedUseCase,
+      useFactory: (aiInsightRepository, processedEventsService, llmPort) =>
+        new HandleTransactionRejectedUseCase(
+          aiInsightRepository,
+          processedEventsService,
+          llmPort,
+        ),
       inject: [AI_INSIGHTS_REPOSITORY, PROCESSED_EVENTS_PORT, LLM_PORT],
     },
     TypeOrmAiInsightsRepository,

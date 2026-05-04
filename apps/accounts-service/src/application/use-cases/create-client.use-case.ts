@@ -9,13 +9,13 @@ export type CreateClientInput = {
   email: string;
 };
 
-export class ClientsService {
+export class CreateClientUseCase {
   constructor(
     private readonly clientRepository: ClientsRepository,
     private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async createClient(input: CreateClientInput): Promise<ClientRecord> {
+  async execute(input: CreateClientInput): Promise<ClientRecord> {
     const email = input.email.toLowerCase();
     const existingClient = await this.clientRepository.findByEmail(email);
 
@@ -46,9 +46,5 @@ export class ClientsService {
     await this.accountsEventsPublisher.publish(KafkaTopics.ClientCreated, event);
 
     return client;
-  }
-
-  async listClients(): Promise<ClientRecord[]> {
-    return this.clientRepository.findAll();
   }
 }

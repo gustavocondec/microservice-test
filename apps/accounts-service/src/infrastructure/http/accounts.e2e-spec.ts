@@ -1,30 +1,32 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AccountsService } from '../../application/services/accounts.service';
-import { ClientsService } from '../../application/services/clients.service';
+import { CreateAccountUseCase } from '../../application/use-cases/create-account.use-case';
+import { CreateClientUseCase } from '../../application/use-cases/create-client.use-case';
+import { GetAccountUseCase } from '../../application/use-cases/get-account.use-case';
+import { ListAccountsByClientUseCase } from '../../application/use-cases/list-accounts-by-client.use-case';
+import { ListClientsUseCase } from '../../application/use-cases/list-clients.use-case';
 import { AccountsController } from './accounts.controller';
 import { ClientsController } from './clients.controller';
 
 describe('Accounts HTTP API (e2e)', () => {
   let app: INestApplication;
 
-  const clientsService = {
-    createClient: jest.fn(),
-    listClients: jest.fn(),
-  };
-  const accountsService = {
-    createAccount: jest.fn(),
-    getAccount: jest.fn(),
-    listAccountsByClient: jest.fn(),
-  };
+  const createClientUseCase = { execute: jest.fn() };
+  const listClientsUseCase = { execute: jest.fn() };
+  const createAccountUseCase = { execute: jest.fn() };
+  const getAccountUseCase = { execute: jest.fn() };
+  const listAccountsByClientUseCase = { execute: jest.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [ClientsController, AccountsController],
       providers: [
-        { provide: ClientsService, useValue: clientsService },
-        { provide: AccountsService, useValue: accountsService },
+        { provide: CreateClientUseCase, useValue: createClientUseCase },
+        { provide: ListClientsUseCase, useValue: listClientsUseCase },
+        { provide: CreateAccountUseCase, useValue: createAccountUseCase },
+        { provide: GetAccountUseCase, useValue: getAccountUseCase },
+        { provide: ListAccountsByClientUseCase, useValue: listAccountsByClientUseCase },
       ],
     }).compile();
 
@@ -38,12 +40,12 @@ describe('Accounts HTTP API (e2e)', () => {
   });
 
   it('creates clients and accounts through HTTP routes', async () => {
-    clientsService.createClient.mockResolvedValue({
+    createClientUseCase.execute.mockResolvedValue({
       id: 'client-1',
       name: 'Ada Lovelace',
       email: 'ada@example.com',
     });
-    accountsService.createAccount.mockResolvedValue({
+    createAccountUseCase.execute.mockResolvedValue({
       id: 'acc-1',
       clientId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
       currency: 'USD',
@@ -68,7 +70,7 @@ describe('Accounts HTTP API (e2e)', () => {
   });
 
   it('lists clients through HTTP routes', async () => {
-    clientsService.listClients.mockResolvedValue([
+    listClientsUseCase.execute.mockResolvedValue([
       {
         id: 'client-1',
         name: 'Ada Lovelace',

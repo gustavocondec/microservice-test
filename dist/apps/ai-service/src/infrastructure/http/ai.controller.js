@@ -15,17 +15,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AiController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const ai_insights_service_1 = require("../../application/services/ai-insights.service");
+const get_transaction_explanation_use_case_1 = require("../../application/use-cases/get-transaction-explanation.use-case");
+const summarize_account_use_case_1 = require("../../application/use-cases/summarize-account.use-case");
 const ai_exception_filter_1 = require("./ai-exception.filter");
 let AiController = class AiController {
-    constructor(aiInsightsService) {
-        this.aiInsightsService = aiInsightsService;
+    constructor(getTransactionExplanationUseCase, summarizeAccountUseCase) {
+        this.getTransactionExplanationUseCase = getTransactionExplanationUseCase;
+        this.summarizeAccountUseCase = summarizeAccountUseCase;
     }
     getTransactionExplanation(transactionId) {
-        return this.aiInsightsService.getTransactionExplanation(transactionId);
+        return this.getTransactionExplanationUseCase.execute(transactionId);
     }
     summarizeAccount(accountId) {
-        return this.aiInsightsService.summarizeAccount(accountId);
+        return this.summarizeAccountUseCase.execute(accountId);
     }
 };
 exports.AiController = AiController;
@@ -51,5 +53,6 @@ exports.AiController = AiController = __decorate([
     (0, swagger_1.ApiTags)('AI'),
     (0, common_1.UseFilters)(ai_exception_filter_1.AiExceptionFilter),
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [ai_insights_service_1.AiInsightsService])
+    __metadata("design:paramtypes", [get_transaction_explanation_use_case_1.GetTransactionExplanationUseCase,
+        summarize_account_use_case_1.SummarizeAccountUseCase])
 ], AiController);

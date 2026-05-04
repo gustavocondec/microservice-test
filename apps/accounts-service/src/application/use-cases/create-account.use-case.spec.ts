@@ -1,8 +1,8 @@
 import { ClientNotFoundError } from '../../domain/errors/client-not-found.error';
 import { InvalidInitialBalanceError } from '../../domain/errors/invalid-initial-balance.error';
-import { AccountsService } from './accounts.service';
+import { CreateAccountUseCase } from './create-account.use-case';
 
-describe('AccountsService', () => {
+describe('CreateAccountUseCase', () => {
   const accountRepository = {
     create: jest.fn(async (value) => ({
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -20,11 +20,11 @@ describe('AccountsService', () => {
     publish: jest.fn(),
   };
 
-  let service: AccountsService;
+  let useCase: CreateAccountUseCase;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AccountsService(
+    useCase = new CreateAccountUseCase(
       accountRepository as never,
       clientRepository as never,
       eventsPublisher as never,
@@ -35,7 +35,7 @@ describe('AccountsService', () => {
     clientRepository.findById.mockResolvedValue(null);
 
     await expect(
-      service.createAccount({
+      useCase.execute({
         clientId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
         currency: 'usd',
         initialBalance: 10,
@@ -47,7 +47,7 @@ describe('AccountsService', () => {
     clientRepository.findById.mockResolvedValue({ id: 'client-1' });
 
     await expect(
-      service.createAccount({
+      useCase.execute({
         clientId: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
         currency: 'usd',
         initialBalance: -1,

@@ -12,9 +12,12 @@ const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const shared_1 = require("../../../libs/shared/src");
 const ai_insights_repository_1 = require("./application/ports/ai-insights.repository");
-const ai_insights_service_1 = require("./application/services/ai-insights.service");
 const llm_port_1 = require("./application/ports/llm.port");
 const processed_events_port_1 = require("./application/ports/processed-events.port");
+const get_transaction_explanation_use_case_1 = require("./application/use-cases/get-transaction-explanation.use-case");
+const handle_transaction_completed_use_case_1 = require("./application/use-cases/handle-transaction-completed.use-case");
+const handle_transaction_rejected_use_case_1 = require("./application/use-cases/handle-transaction-rejected.use-case");
+const summarize_account_use_case_1 = require("./application/use-cases/summarize-account.use-case");
 const ai_controller_1 = require("./infrastructure/http/ai.controller");
 const health_controller_1 = require("./infrastructure/http/health.controller");
 const mock_llm_provider_1 = require("./infrastructure/llm/mock-llm.provider");
@@ -38,8 +41,23 @@ exports.AppModule = AppModule = __decorate([
         controllers: [ai_controller_1.AiController, health_controller_1.HealthController, ai_consumer_1.AiConsumerController],
         providers: [
             {
-                provide: ai_insights_service_1.AiInsightsService,
-                useFactory: (aiInsightRepository, processedEventsService, llmPort) => new ai_insights_service_1.AiInsightsService(aiInsightRepository, processedEventsService, llmPort),
+                provide: get_transaction_explanation_use_case_1.GetTransactionExplanationUseCase,
+                useFactory: (aiInsightRepository) => new get_transaction_explanation_use_case_1.GetTransactionExplanationUseCase(aiInsightRepository),
+                inject: [ai_insights_repository_1.AI_INSIGHTS_REPOSITORY],
+            },
+            {
+                provide: summarize_account_use_case_1.SummarizeAccountUseCase,
+                useFactory: (aiInsightRepository, llmPort) => new summarize_account_use_case_1.SummarizeAccountUseCase(aiInsightRepository, llmPort),
+                inject: [ai_insights_repository_1.AI_INSIGHTS_REPOSITORY, llm_port_1.LLM_PORT],
+            },
+            {
+                provide: handle_transaction_completed_use_case_1.HandleTransactionCompletedUseCase,
+                useFactory: (aiInsightRepository, processedEventsService, llmPort) => new handle_transaction_completed_use_case_1.HandleTransactionCompletedUseCase(aiInsightRepository, processedEventsService, llmPort),
+                inject: [ai_insights_repository_1.AI_INSIGHTS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, llm_port_1.LLM_PORT],
+            },
+            {
+                provide: handle_transaction_rejected_use_case_1.HandleTransactionRejectedUseCase,
+                useFactory: (aiInsightRepository, processedEventsService, llmPort) => new handle_transaction_rejected_use_case_1.HandleTransactionRejectedUseCase(aiInsightRepository, processedEventsService, llmPort),
                 inject: [ai_insights_repository_1.AI_INSIGHTS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, llm_port_1.LLM_PORT],
             },
             typeorm_ai_insights_repository_1.TypeOrmAiInsightsRepository,

@@ -11,7 +11,10 @@ import {
 import { PROCESSED_EVENTS_PORT } from './application/ports/processed-events.port';
 import { TRANSACTIONS_EVENTS_PORT } from './application/ports/transactions-events.port';
 import { TRANSACTIONS_REPOSITORY } from './application/ports/transactions.repository';
-import { TransactionsService } from './application/services/transactions.service';
+import { CreateTransactionUseCase } from './application/use-cases/create-transaction.use-case';
+import { GetTransactionUseCase } from './application/use-cases/get-transaction.use-case';
+import { HandleTransactionCompletedUseCase } from './application/use-cases/handle-transaction-completed.use-case';
+import { HandleTransactionRejectedUseCase } from './application/use-cases/handle-transaction-rejected.use-case';
 import { HealthController } from './infrastructure/http/health.controller';
 import { TransactionsController } from './infrastructure/http/transactions.controller';
 import {
@@ -45,14 +48,35 @@ import { TypeOrmTransactionsRepository } from './infrastructure/persistence/type
   ],
   providers: [
     {
-      provide: TransactionsService,
-      useFactory: (transactionRepository, processedEventsService, transactionsEventsPublisher) =>
-        new TransactionsService(
+      provide: CreateTransactionUseCase,
+      useFactory: (transactionRepository, transactionsEventsPublisher) =>
+        new CreateTransactionUseCase(transactionRepository, transactionsEventsPublisher),
+      inject: [TRANSACTIONS_REPOSITORY, TRANSACTIONS_EVENTS_PORT],
+    },
+    {
+      provide: GetTransactionUseCase,
+      useFactory: (transactionRepository) => new GetTransactionUseCase(transactionRepository),
+      inject: [TRANSACTIONS_REPOSITORY],
+    },
+    {
+      provide: HandleTransactionCompletedUseCase,
+      useFactory: (transactionRepository, processedEventsService, getTransactionUseCase) =>
+        new HandleTransactionCompletedUseCase(
           transactionRepository,
           processedEventsService,
-          transactionsEventsPublisher,
+          getTransactionUseCase,
         ),
-      inject: [TRANSACTIONS_REPOSITORY, PROCESSED_EVENTS_PORT, TRANSACTIONS_EVENTS_PORT],
+      inject: [TRANSACTIONS_REPOSITORY, PROCESSED_EVENTS_PORT, GetTransactionUseCase],
+    },
+    {
+      provide: HandleTransactionRejectedUseCase,
+      useFactory: (transactionRepository, processedEventsService, getTransactionUseCase) =>
+        new HandleTransactionRejectedUseCase(
+          transactionRepository,
+          processedEventsService,
+          getTransactionUseCase,
+        ),
+      inject: [TRANSACTIONS_REPOSITORY, PROCESSED_EVENTS_PORT, GetTransactionUseCase],
     },
     TypeOrmTransactionsRepository,
     TransactionsEventsPublisher,
