@@ -1,6 +1,3 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   type DomainEvent,
@@ -11,49 +8,59 @@ import {
   TransactionStatus,
   TransactionType,
 } from '@app/contracts';
-import { buildEventMetadata, ProcessedEventsService } from '@app/shared';
 import { InvalidTransactionError } from '../../domain/errors/invalid-transaction.error';
-import { CreateTransactionDto } from '../../infrastructure/http/dto/create-transaction.dto';
-import { TransactionsEventsPublisher } from '../../infrastructure/messaging/transactions-events.publisher';
-import { TransactionEntity } from '../../infrastructure/persistence/entities/transaction.entity';
+import { TransactionNotFoundError } from '../../domain/errors/transaction-not-found.error';
+import { type ProcessedEventsPort } from '../ports/processed-events.port';
+import { type TransactionsEventsPort } from '../ports/transactions-events.port';
+import {
+  type TransactionRecord,
+  type TransactionsRepository,
+} from '../ports/transactions.repository';
 
-@Injectable()
+export type CreateTransactionInput = {
+  type: TransactionType;
+  amount: number;
+  sourceAccountId?: string;
+  targetAccountId?: string;
+  idempotencyKey: string;
+  correlationId?: string;
+};
+
 export class TransactionsService {
   constructor(
-    @InjectRepository(TransactionEntity)
-    private readonly transactionRepository: Repository<TransactionEntity>,
-    private readonly processedEventsService: ProcessedEventsService,
-    private readonly transactionsEventsPublisher: TransactionsEventsPublisher,
+    private readonly transactionRepository: TransactionsRepository,
+    private readonly processedEventsService: ProcessedEventsPort,
+    private readonly transactionsEventsPublisher: TransactionsEventsPort,
   ) {}
 
-  async createTransaction(dto: CreateTransactionDto): Promise<TransactionEntity> {
-    this.validateTransactionRequest(dto);
+  async createTransaction(input: CreateTransactionInput): Promise<TransactionRecord> {
+    this.validateTransactionRequest(input);
 
-    const existingTransaction = await this.transactionRepository.findOne({
-      where: { idempotencyKey: dto.idempotencyKey },
-    });
+    const existingTransaction = await this.transactionRepository.findByIdempotencyKey(
+      input.idempotencyKey,
+    );
 
     if (existingTransaction) {
       return existingTransaction;
     }
 
-    const transaction = this.transactionRepository.create({
+    const transaction = await this.transactionRepository.create({
       id: randomUUID(),
-      type: dto.type,
+      type: input.type,
       status: TransactionStatus.PENDING,
-      amount: Number(dto.amount),
-      sourceAccountId: dto.sourceAccountId ?? null,
-      targetAccountId: dto.targetAccountId ?? null,
-      idempotencyKey: dto.idempotencyKey,
+      amount: Number(input.amount),
+      sourceAccountId: input.sourceAccountId ?? null,
+      targetAccountId: input.targetAccountId ?? null,
+      idempotencyKey: input.idempotencyKey,
     });
 
-    await this.transactionRepository.save(transaction);
-
     const event: DomainEvent<TransactionRequestedPayload> = {
-      metadata: buildEventMetadata(
-        KafkaTopics.TransactionRequested,
-        dto.correlationId ?? transaction.id,
-      ),
+      metadata: {
+        eventId: randomUUID(),
+        eventType: KafkaTopics.TransactionRequested,
+        occurredAt: new Date().toISOString(),
+        correlationId: input.correlationId ?? transaction.id,
+      },
       payload: {
         transactionId: transaction.id,
         type: transaction.type,
@@ -70,13 +77,11 @@ export class TransactionsService {
     return transaction;
   }
 
-  async getTransaction(transactionId: string): Promise<TransactionEntity> {
-    const transaction = await this.transactionRepository.findOne({
-      where: { id: transactionId },
-    });
+  async getTransaction(transactionId: string): Promise<TransactionRecord> {
+    const transaction = await this.transactionRepository.findById(transactionId);
 
     if (!transaction) {
-      throw new NotFoundException('Transaction not found');
+      throw new TransactionNotFoundError();
     }
 
     return transaction;
@@ -122,23 +127,23 @@ export class TransactionsService {
     );
   }
 
-  private validateTransactionRequest(dto: CreateTransactionDto): void {
-    switch (dto.type) {
+  private validateTransactionRequest(input: CreateTransactionInput): void {
+    switch (input.type) {
       case TransactionType.DEPOSIT:
-        if (!dto.targetAccountId) {
+        if (!input.targetAccountId) {
           throw new InvalidTransactionError('Deposits require a target account');
         }
         break;
       case TransactionType.WITHDRAW:
-        if (!dto.sourceAccountId) {
+        if (!input.sourceAccountId) {
           throw new InvalidTransactionError('Withdrawals require a source account');
         }
         break;
       case TransactionType.TRANSFER:
-        if (!dto.sourceAccountId || !dto.targetAccountId) {
+        if (!input.sourceAccountId || !input.targetAccountId) {
           throw new InvalidTransactionError('Transfers require source and target accounts');
         }
-        if (dto.sourceAccountId === dto.targetAccountId) {
+        if (input.sourceAccountId === input.targetAccountId) {
           throw new InvalidTransactionError('Transfers require different accounts');
         }
         break;

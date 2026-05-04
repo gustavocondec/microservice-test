@@ -18,12 +18,20 @@ const swagger_1 = require("@nestjs/swagger");
 const contracts_1 = require("../../../../../libs/contracts/src");
 const transactions_service_1 = require("../../application/services/transactions.service");
 const create_transaction_dto_1 = require("./dto/create-transaction.dto");
+const transactions_exception_filter_1 = require("./transactions-exception.filter");
 let TransactionsController = class TransactionsController {
     constructor(transactionsService) {
         this.transactionsService = transactionsService;
     }
     createTransaction(dto) {
-        return this.transactionsService.createTransaction(dto);
+        return this.transactionsService.createTransaction({
+            type: dto.type,
+            amount: dto.amount,
+            sourceAccountId: dto.sourceAccountId,
+            targetAccountId: dto.targetAccountId,
+            idempotencyKey: dto.idempotencyKey,
+            correlationId: dto.correlationId,
+        });
     }
     getTransaction(transactionId) {
         return this.transactionsService.getTransaction(transactionId);
@@ -85,6 +93,7 @@ __decorate([
 ], TransactionsController.prototype, "getTransaction", null);
 exports.TransactionsController = TransactionsController = __decorate([
     (0, swagger_1.ApiTags)('Transactions'),
+    (0, common_1.UseFilters)(transactions_exception_filter_1.TransactionsExceptionFilter),
     (0, common_1.Controller)('transactions'),
     __metadata("design:paramtypes", [transactions_service_1.TransactionsService])
 ], TransactionsController);

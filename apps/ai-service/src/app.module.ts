@@ -7,14 +7,17 @@ import {
   ProcessedEventEntity,
   ProcessedEventsService,
 } from '@app/shared';
+import { AI_INSIGHTS_REPOSITORY } from './application/ports/ai-insights.repository';
 import { AiInsightsService } from './application/services/ai-insights.service';
 import { LLM_PORT } from './application/ports/llm.port';
+import { PROCESSED_EVENTS_PORT } from './application/ports/processed-events.port';
 import { AiController } from './infrastructure/http/ai.controller';
 import { HealthController } from './infrastructure/http/health.controller';
 import { MockLlmProvider } from './infrastructure/llm/mock-llm.provider';
 import { AiConsumerController } from './infrastructure/messaging/ai.consumer';
 import { AiInsightEntity } from './infrastructure/persistence/entities/ai-insight.entity';
 import { InitAi1712702000000 } from './infrastructure/persistence/migrations/1712702000000-init-ai';
+import { TypeOrmAiInsightsRepository } from './infrastructure/persistence/typeorm-ai-insights.repository';
 
 @Module({
   imports: [
@@ -32,10 +35,24 @@ import { InitAi1712702000000 } from './infrastructure/persistence/migrations/171
   ],
   controllers: [AiController, HealthController, AiConsumerController],
   providers: [
-    AiInsightsService,
+    {
+      provide: AiInsightsService,
+      useFactory: (aiInsightRepository, processedEventsService, llmPort) =>
+        new AiInsightsService(aiInsightRepository, processedEventsService, llmPort),
+      inject: [AI_INSIGHTS_REPOSITORY, PROCESSED_EVENTS_PORT, LLM_PORT],
+    },
+    TypeOrmAiInsightsRepository,
     MockLlmProvider,
     DatabaseBootstrapService,
     ProcessedEventsService,
+    {
+      provide: AI_INSIGHTS_REPOSITORY,
+      useExisting: TypeOrmAiInsightsRepository,
+    },
+    {
+      provide: PROCESSED_EVENTS_PORT,
+      useExisting: ProcessedEventsService,
+    },
     {
       provide: LLM_PORT,
       useExisting: MockLlmProvider,

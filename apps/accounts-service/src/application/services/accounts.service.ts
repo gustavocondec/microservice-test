@@ -1,48 +1,50 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { KafkaTopics, type AccountCreatedPayload, type DomainEvent } from '@app/contracts';
-import { buildEventMetadata } from '@app/shared';
-import { CreateAccountDto } from '../../infrastructure/http/dto/create-account.dto';
-import { AccountEntity } from '../../infrastructure/persistence/entities/account.entity';
-import { ClientEntity } from '../../infrastructure/persistence/entities/client.entity';
-import { AccountsEventsPublisher } from '../../infrastructure/messaging/accounts-events.publisher';
+import { AccountNotFoundError } from '../../domain/errors/account-not-found.error';
+import { ClientNotFoundError } from '../../domain/errors/client-not-found.error';
+import { InvalidInitialBalanceError } from '../../domain/errors/invalid-initial-balance.error';
+import { type AccountsEventsPort } from '../ports/accounts-events.port';
+import { type AccountRecord, type AccountsRepository } from '../ports/accounts.repository';
+import { type ClientsRepository } from '../ports/clients.repository';
 
-@Injectable()
+export type CreateAccountInput = {
+  clientId: string;
+  currency: string;
+  initialBalance: number;
+};
+
 export class AccountsService {
   constructor(
-    @InjectRepository(AccountEntity)
-    private readonly accountRepository: Repository<AccountEntity>,
-    @InjectRepository(ClientEntity)
-    private readonly clientRepository: Repository<ClientEntity>,
-    private readonly accountsEventsPublisher: AccountsEventsPublisher,
+    private readonly accountRepository: AccountsRepository,
+    private readonly clientRepository: ClientsRepository,
+    private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async createAccount(dto: CreateAccountDto): Promise<AccountEntity> {
-    const client = await this.clientRepository.findOne({
-      where: { id: dto.clientId },
-    });
+  async createAccount(input: CreateAccountInput): Promise<AccountRecord> {
+    const client = await this.clientRepository.findById(input.clientId);
 
     if (!client) {
-      throw new NotFoundException('Client not found');
+      throw new ClientNotFoundError();
     }
 
-    if (dto.initialBalance < 0) {
-      throw new BadRequestException('Initial balance cannot be negative');
+    if (input.initialBalance < 0) {
+      throw new InvalidInitialBalanceError();
     }
 
-    const account = this.accountRepository.create({
+    const account = await this.accountRepository.create({
       id: randomUUID(),
-      clientId: dto.clientId,
-      currency: dto.currency.toUpperCase(),
-      balance: Number(dto.initialBalance ?? 0),
+      clientId: input.clientId,
+      currency: input.currency.toUpperCase(),
+      balance: Number(input.initialBalance ?? 0),
     });
 
-    await this.accountRepository.save(account);
-
     const event: DomainEvent<AccountCreatedPayload> = {
-      metadata: buildEventMetadata(KafkaTopics.AccountCreated, account.id),
+      metadata: {
+        eventId: randomUUID(),
+        eventType: KafkaTopics.AccountCreated,
+        occurredAt: new Date().toISOString(),
+        correlationId: account.id,
+      },
       payload: {
         accountId: account.id,
         clientId: account.clientId,
@@ -56,30 +58,27 @@ export class AccountsService {
     return account;
   }
 
-  async getAccount(accountId: string): Promise<AccountEntity> {
-    const account = await this.accountRepository.findOne({ where: { id: accountId } });
+  async getAccount(accountId: string): Promise<AccountRecord> {
+    const account = await this.accountRepository.findById(accountId);
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new AccountNotFoundError();
     }
 
     return account;
   }
 
-  async listAccountsByClient(clientId: string): Promise<AccountEntity[]> {
+  async listAccountsByClient(clientId: string): Promise<AccountRecord[]> {
     await this.ensureClientExists(clientId);
 
-    return this.accountRepository.find({
-      where: { clientId },
-      order: { createdAt: 'ASC' },
-    });
+    return this.accountRepository.findByClientId(clientId);
   }
 
   private async ensureClientExists(clientId: string): Promise<void> {
-    const client = await this.clientRepository.findOne({ where: { id: clientId } });
+    const client = await this.clientRepository.findById(clientId);
 
     if (!client) {
-      throw new NotFoundException('Client not found');
+      throw new ClientNotFoundError();
     }
   }
 }

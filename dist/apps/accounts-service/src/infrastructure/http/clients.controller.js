@@ -16,13 +16,17 @@ exports.ClientsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const clients_service_1 = require("../../application/services/clients.service");
+const accounts_exception_filter_1 = require("./accounts-exception.filter");
 const create_client_dto_1 = require("./dto/create-client.dto");
 let ClientsController = class ClientsController {
     constructor(clientsService) {
         this.clientsService = clientsService;
     }
     createClient(dto) {
-        return this.clientsService.createClient(dto);
+        return this.clientsService.createClient({
+            name: dto.name,
+            email: dto.email,
+        });
     }
     listClients() {
         return this.clientsService.listClients();
@@ -46,6 +50,7 @@ __decorate([
 ], ClientsController.prototype, "listClients", null);
 exports.ClientsController = ClientsController = __decorate([
     (0, swagger_1.ApiTags)('Clients'),
+    (0, common_1.UseFilters)(accounts_exception_filter_1.AccountsExceptionFilter),
     (0, common_1.Controller)('clients'),
     __metadata("design:paramtypes", [clients_service_1.ClientsService])
 ], ClientsController);

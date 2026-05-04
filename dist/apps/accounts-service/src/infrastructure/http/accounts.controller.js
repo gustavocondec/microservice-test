@@ -16,13 +16,18 @@ exports.AccountsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const accounts_service_1 = require("../../application/services/accounts.service");
+const accounts_exception_filter_1 = require("./accounts-exception.filter");
 const create_account_dto_1 = require("./dto/create-account.dto");
 let AccountsController = class AccountsController {
     constructor(accountsService) {
         this.accountsService = accountsService;
     }
     createAccount(dto) {
-        return this.accountsService.createAccount(dto);
+        return this.accountsService.createAccount({
+            clientId: dto.clientId,
+            currency: dto.currency,
+            initialBalance: dto.initialBalance,
+        });
     }
     getAccount(accountId) {
         return this.accountsService.getAccount(accountId);
@@ -60,6 +65,7 @@ __decorate([
 ], AccountsController.prototype, "listAccounts", null);
 exports.AccountsController = AccountsController = __decorate([
     (0, swagger_1.ApiTags)('Accounts'),
+    (0, common_1.UseFilters)(accounts_exception_filter_1.AccountsExceptionFilter),
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [accounts_service_1.AccountsService])
 ], AccountsController);

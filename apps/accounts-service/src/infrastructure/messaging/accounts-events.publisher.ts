@@ -2,11 +2,12 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import { DomainEvent, KafkaTopic } from '@app/contracts';
 import { lastValueFrom } from 'rxjs';
+import { type AccountsEventsPort } from '../../application/ports/accounts-events.port';
 
 export const ACCOUNTS_KAFKA_CLIENT = 'ACCOUNTS_KAFKA_CLIENT';
 
 @Injectable()
-export class AccountsEventsPublisher implements OnModuleInit {
+export class AccountsEventsPublisher implements AccountsEventsPort, OnModuleInit {
   constructor(
     @Inject(ACCOUNTS_KAFKA_CLIENT)
     private readonly kafkaClient: ClientKafka,

@@ -1,6 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import {
   type BalanceUpdatedPayload,
   type DomainEvent,
@@ -12,33 +10,31 @@ import {
   type TransactionRequestedPayload,
   TransactionType,
 } from '@app/contracts';
-import { buildEventMetadata, ProcessedEventsService } from '@app/shared';
 import { BusinessRuleError } from '../../domain/errors/business-rule.error';
-import { AccountsEventsPublisher } from '../../infrastructure/messaging/accounts-events.publisher';
-import { AccountEntity } from '../../infrastructure/persistence/entities/account.entity';
+import { type AccountsEventsPort } from '../ports/accounts-events.port';
+import {
+  type AccountRecord,
+  type AccountsTransactionRepository,
+  type AccountsUnitOfWork,
+} from '../ports/accounts.repository';
+import { type ProcessedEventsPort } from '../ports/processed-events.port';
 
 type AccountMutationResult = {
   balanceEvents: Array<DomainEvent<BalanceUpdatedPayload>>;
   finalEvent: DomainEvent<TransactionCompletedPayload> | DomainEvent<TransactionRejectedPayload>;
 };
 
-@Injectable()
 export class TransactionOrchestratorService {
-  private readonly logger = new Logger(TransactionOrchestratorService.name);
-
   constructor(
-    private readonly dataSource: DataSource,
-    @InjectRepository(AccountEntity)
-    private readonly accountRepository: Repository<AccountEntity>,
-    private readonly processedEventsService: ProcessedEventsService,
-    private readonly accountsEventsPublisher: AccountsEventsPublisher,
+    private readonly accountsUnitOfWork: AccountsUnitOfWork,
+    private readonly processedEventsService: ProcessedEventsPort,
+    private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
   async handleTransactionRequested(
     event: DomainEvent<TransactionRequestedPayload>,
   ): Promise<void> {
     if (await this.processedEventsService.hasProcessed(event.metadata.eventId)) {
-      this.logger.warn(`Skipping already processed event ${event.metadata.eventId}`);
       return;
     }
 
@@ -54,7 +50,10 @@ export class TransactionOrchestratorService {
       result = {
         balanceEvents: [],
         finalEvent: {
-          metadata: buildEventMetadata(KafkaTopics.TransactionRejected, event.metadata.correlationId),
+          metadata: this.createEventMetadata(
+            KafkaTopics.TransactionRejected,
+            event.metadata.correlationId,
+          ),
           payload: {
             transactionId: event.payload.transactionId,
             type: event.payload.type,
@@ -97,10 +96,9 @@ export class TransactionOrchestratorService {
   private async applyTransaction(
     event: DomainEvent<TransactionRequestedPayload>,
   ): Promise<AccountMutationResult> {
-    return this.dataSource.transaction(async (manager) => {
-      const accountRepository = manager.getRepository(AccountEntity);
+    return this.accountsUnitOfWork.run(async (accountRepository) => {
       const payload = event.payload;
-      const accountsToPersist: AccountEntity[] = [];
+      const accountsToPersist: AccountRecord[] = [];
       const balanceEvents: Array<DomainEvent<BalanceUpdatedPayload>> = [];
 
       switch (payload.type) {
@@ -141,13 +139,16 @@ export class TransactionOrchestratorService {
       }
 
       if (accountsToPersist.length > 0) {
-        await accountRepository.save(accountsToPersist);
+        await accountRepository.saveAll(accountsToPersist);
       }
 
       return {
         balanceEvents,
         finalEvent: {
-          metadata: buildEventMetadata(KafkaTopics.TransactionCompleted, event.metadata.correlationId),
+          metadata: this.createEventMetadata(
+            KafkaTopics.TransactionCompleted,
+            event.metadata.correlationId,
+          ),
           payload: {
             transactionId: payload.transactionId,
             type: payload.type,
@@ -163,9 +164,9 @@ export class TransactionOrchestratorService {
   }
 
   private async findRequiredAccount(
-    repository: Repository<AccountEntity>,
+    repository: AccountsTransactionRepository,
     accountId: string | undefined,
-  ): Promise<AccountEntity> {
+  ): Promise<AccountRecord> {
     if (!accountId) {
       throw new BusinessRuleError(
         TransactionRejectionCode.INVALID_REQUEST,
@@ -173,9 +174,7 @@ export class TransactionOrchestratorService {
       );
     }
 
-    const account = await repository.findOne({
-      where: { id: accountId },
-    });
+    const account = await repository.findById(accountId);
 
     if (!account) {
       throw new BusinessRuleError(
@@ -187,7 +186,7 @@ export class TransactionOrchestratorService {
     return account;
   }
 
-  private ensureFunds(account: AccountEntity, amount: number): void {
+  private ensureFunds(account: AccountRecord, amount: number): void {
     if (account.balance < amount) {
       throw new BusinessRuleError(
         TransactionRejectionCode.INSUFFICIENT_FUNDS,
@@ -197,18 +196,27 @@ export class TransactionOrchestratorService {
   }
 
   private createBalanceEvent(
-    account: AccountEntity,
+    account: AccountRecord,
     transactionId: string,
     correlationId: string,
   ): DomainEvent<BalanceUpdatedPayload> {
     return {
-      metadata: buildEventMetadata(KafkaTopics.BalanceUpdated, correlationId),
+      metadata: this.createEventMetadata(KafkaTopics.BalanceUpdated, correlationId),
       payload: {
         accountId: account.id,
         clientId: account.clientId,
         balance: account.balance,
         transactionId,
       },
+    };
+  }
+
+  private createEventMetadata(eventType: string, correlationId: string) {
+    return {
+      eventId: randomUUID(),
+      eventType,
+      occurredAt: new Date().toISOString(),
+      correlationId,
     };
   }
 }

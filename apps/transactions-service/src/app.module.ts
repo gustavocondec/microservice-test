@@ -8,6 +8,9 @@ import {
   ProcessedEventEntity,
   ProcessedEventsService,
 } from '@app/shared';
+import { PROCESSED_EVENTS_PORT } from './application/ports/processed-events.port';
+import { TRANSACTIONS_EVENTS_PORT } from './application/ports/transactions-events.port';
+import { TRANSACTIONS_REPOSITORY } from './application/ports/transactions.repository';
 import { TransactionsService } from './application/services/transactions.service';
 import { HealthController } from './infrastructure/http/health.controller';
 import { TransactionsController } from './infrastructure/http/transactions.controller';
@@ -18,6 +21,7 @@ import {
 import { TransactionsEventsConsumerController } from './infrastructure/messaging/transactions.consumer';
 import { TransactionEntity } from './infrastructure/persistence/entities/transaction.entity';
 import { InitTransactions1712701000000 } from './infrastructure/persistence/migrations/1712701000000-init-transactions';
+import { TypeOrmTransactionsRepository } from './infrastructure/persistence/typeorm-transactions.repository';
 
 @Module({
   imports: [
@@ -40,8 +44,30 @@ import { InitTransactions1712701000000 } from './infrastructure/persistence/migr
     TransactionsEventsConsumerController,
   ],
   providers: [
-    TransactionsService,
+    {
+      provide: TransactionsService,
+      useFactory: (transactionRepository, processedEventsService, transactionsEventsPublisher) =>
+        new TransactionsService(
+          transactionRepository,
+          processedEventsService,
+          transactionsEventsPublisher,
+        ),
+      inject: [TRANSACTIONS_REPOSITORY, PROCESSED_EVENTS_PORT, TRANSACTIONS_EVENTS_PORT],
+    },
+    TypeOrmTransactionsRepository,
     TransactionsEventsPublisher,
+    {
+      provide: TRANSACTIONS_REPOSITORY,
+      useExisting: TypeOrmTransactionsRepository,
+    },
+    {
+      provide: TRANSACTIONS_EVENTS_PORT,
+      useExisting: TransactionsEventsPublisher,
+    },
+    {
+      provide: PROCESSED_EVENTS_PORT,
+      useExisting: ProcessedEventsService,
+    },
     DatabaseBootstrapService,
     ProcessedEventsService,
   ],

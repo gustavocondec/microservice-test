@@ -1,8 +1,10 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseFilters } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AiInsightsService } from '../../application/services/ai-insights.service';
+import { AiExceptionFilter } from './ai-exception.filter';
 
 @ApiTags('AI')
+@UseFilters(AiExceptionFilter)
 @Controller()
 export class AiController {
   constructor(private readonly aiInsightsService: AiInsightsService) {}

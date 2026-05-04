@@ -1,40 +1,41 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { KafkaTopics, type ClientCreatedPayload, type DomainEvent } from '@app/contracts';
-import { buildEventMetadata } from '@app/shared';
-import { CreateClientDto } from '../../infrastructure/http/dto/create-client.dto';
-import { ClientEntity } from '../../infrastructure/persistence/entities/client.entity';
-import { AccountsEventsPublisher } from '../../infrastructure/messaging/accounts-events.publisher';
+import { DuplicateClientEmailError } from '../../domain/errors/duplicate-client-email.error';
+import { type AccountsEventsPort } from '../ports/accounts-events.port';
+import { type ClientRecord, type ClientsRepository } from '../ports/clients.repository';
 
-@Injectable()
+export type CreateClientInput = {
+  name: string;
+  email: string;
+};
+
 export class ClientsService {
   constructor(
-    @InjectRepository(ClientEntity)
-    private readonly clientRepository: Repository<ClientEntity>,
-    private readonly accountsEventsPublisher: AccountsEventsPublisher,
+    private readonly clientRepository: ClientsRepository,
+    private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async createClient(dto: CreateClientDto): Promise<ClientEntity> {
-    const existingClient = await this.clientRepository.findOne({
-      where: { email: dto.email.toLowerCase() },
-    });
+  async createClient(input: CreateClientInput): Promise<ClientRecord> {
+    const email = input.email.toLowerCase();
+    const existingClient = await this.clientRepository.findByEmail(email);
 
     if (existingClient) {
-      throw new ConflictException('A client with the same email already exists');
+      throw new DuplicateClientEmailError();
     }
 
-    const client = this.clientRepository.create({
+    const client = await this.clientRepository.create({
       id: randomUUID(),
-      name: dto.name,
-      email: dto.email.toLowerCase(),
+      name: input.name,
+      email,
     });
 
-    await this.clientRepository.save(client);
-
     const event: DomainEvent<ClientCreatedPayload> = {
-      metadata: buildEventMetadata(KafkaTopics.ClientCreated, client.id),
+      metadata: {
+        eventId: randomUUID(),
+        eventType: KafkaTopics.ClientCreated,
+        occurredAt: new Date().toISOString(),
+        correlationId: client.id,
+      },
       payload: {
         clientId: client.id,
         name: client.name,
@@ -47,9 +48,7 @@ export class ClientsService {
     return client;
   }
 
-  async listClients(): Promise<ClientEntity[]> {
-    return this.clientRepository.find({
-      order: { createdAt: 'ASC' },
-    });
+  async listClients(): Promise<ClientRecord[]> {
+    return this.clientRepository.findAll();
   }
 }

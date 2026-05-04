@@ -4,9 +4,11 @@ import { TransactionsService } from './transactions.service';
 
 describe('TransactionsService', () => {
   const transactionRepository = {
-    findOne: jest.fn(),
-    create: jest.fn((value) => ({
+    findById: jest.fn(),
+    findByIdempotencyKey: jest.fn(),
+    create: jest.fn(async (value) => ({
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
       ...value,
     })),
     save: jest.fn(async (value) => value),
@@ -37,7 +39,7 @@ describe('TransactionsService', () => {
       idempotencyKey: 'idem-1',
     };
 
-    transactionRepository.findOne.mockResolvedValue(existingTransaction);
+    transactionRepository.findByIdempotencyKey.mockResolvedValue(existingTransaction);
 
     const result = await service.createTransaction({
       type: TransactionType.DEPOSIT,

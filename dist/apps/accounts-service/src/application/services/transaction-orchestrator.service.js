@@ -1,38 +1,17 @@
 "use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-var TransactionOrchestratorService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionOrchestratorService = void 0;
-const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
+const crypto_1 = require("crypto");
 const contracts_1 = require("../../../../../libs/contracts/src");
-const shared_1 = require("../../../../../libs/shared/src");
 const business_rule_error_1 = require("../../domain/errors/business-rule.error");
-const accounts_events_publisher_1 = require("../../infrastructure/messaging/accounts-events.publisher");
-const account_entity_1 = require("../../infrastructure/persistence/entities/account.entity");
-let TransactionOrchestratorService = TransactionOrchestratorService_1 = class TransactionOrchestratorService {
-    constructor(dataSource, accountRepository, processedEventsService, accountsEventsPublisher) {
-        this.dataSource = dataSource;
-        this.accountRepository = accountRepository;
+class TransactionOrchestratorService {
+    constructor(accountsUnitOfWork, processedEventsService, accountsEventsPublisher) {
+        this.accountsUnitOfWork = accountsUnitOfWork;
         this.processedEventsService = processedEventsService;
         this.accountsEventsPublisher = accountsEventsPublisher;
-        this.logger = new common_1.Logger(TransactionOrchestratorService_1.name);
     }
     async handleTransactionRequested(event) {
         if (await this.processedEventsService.hasProcessed(event.metadata.eventId)) {
-            this.logger.warn(`Skipping already processed event ${event.metadata.eventId}`);
             return;
         }
         let result;
@@ -46,7 +25,7 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
             result = {
                 balanceEvents: [],
                 finalEvent: {
-                    metadata: (0, shared_1.buildEventMetadata)(contracts_1.KafkaTopics.TransactionRejected, event.metadata.correlationId),
+                    metadata: this.createEventMetadata(contracts_1.KafkaTopics.TransactionRejected, event.metadata.correlationId),
                     payload: {
                         transactionId: event.payload.transactionId,
                         type: event.payload.type,
@@ -75,8 +54,7 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
         await this.processedEventsService.markProcessed(event.metadata.eventId, event.metadata.eventType);
     }
     async applyTransaction(event) {
-        return this.dataSource.transaction(async (manager) => {
-            const accountRepository = manager.getRepository(account_entity_1.AccountEntity);
+        return this.accountsUnitOfWork.run(async (accountRepository) => {
             const payload = event.payload;
             const accountsToPersist = [];
             const balanceEvents = [];
@@ -110,12 +88,12 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
                     throw new business_rule_error_1.BusinessRuleError(contracts_1.TransactionRejectionCode.INVALID_REQUEST, 'Unsupported transaction type');
             }
             if (accountsToPersist.length > 0) {
-                await accountRepository.save(accountsToPersist);
+                await accountRepository.saveAll(accountsToPersist);
             }
             return {
                 balanceEvents,
                 finalEvent: {
-                    metadata: (0, shared_1.buildEventMetadata)(contracts_1.KafkaTopics.TransactionCompleted, event.metadata.correlationId),
+                    metadata: this.createEventMetadata(contracts_1.KafkaTopics.TransactionCompleted, event.metadata.correlationId),
                     payload: {
                         transactionId: payload.transactionId,
                         type: payload.type,
@@ -133,9 +111,7 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
         if (!accountId) {
             throw new business_rule_error_1.BusinessRuleError(contracts_1.TransactionRejectionCode.INVALID_REQUEST, 'Required account identifier is missing');
         }
-        const account = await repository.findOne({
-            where: { id: accountId },
-        });
+        const account = await repository.findById(accountId);
         if (!account) {
             throw new business_rule_error_1.BusinessRuleError(contracts_1.TransactionRejectionCode.ACCOUNT_NOT_FOUND, `Account ${accountId} was not found`);
         }
@@ -148,7 +124,7 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
     }
     createBalanceEvent(account, transactionId, correlationId) {
         return {
-            metadata: (0, shared_1.buildEventMetadata)(contracts_1.KafkaTopics.BalanceUpdated, correlationId),
+            metadata: this.createEventMetadata(contracts_1.KafkaTopics.BalanceUpdated, correlationId),
             payload: {
                 accountId: account.id,
                 clientId: account.clientId,
@@ -157,13 +133,13 @@ let TransactionOrchestratorService = TransactionOrchestratorService_1 = class Tr
             },
         };
     }
-};
+    createEventMetadata(eventType, correlationId) {
+        return {
+            eventId: (0, crypto_1.randomUUID)(),
+            eventType,
+            occurredAt: new Date().toISOString(),
+            correlationId,
+        };
+    }
+}
 exports.TransactionOrchestratorService = TransactionOrchestratorService;
-exports.TransactionOrchestratorService = TransactionOrchestratorService = TransactionOrchestratorService_1 = __decorate([
-    (0, common_1.Injectable)(),
-    __param(1, (0, typeorm_1.InjectRepository)(account_entity_1.AccountEntity)),
-    __metadata("design:paramtypes", [typeorm_2.DataSource,
-        typeorm_2.Repository,
-        shared_1.ProcessedEventsService,
-        accounts_events_publisher_1.AccountsEventsPublisher])
-], TransactionOrchestratorService);

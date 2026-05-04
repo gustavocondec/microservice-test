@@ -16,6 +16,7 @@ exports.AiController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const ai_insights_service_1 = require("../../application/services/ai-insights.service");
+const ai_exception_filter_1 = require("./ai-exception.filter");
 let AiController = class AiController {
     constructor(aiInsightsService) {
         this.aiInsightsService = aiInsightsService;
@@ -48,6 +49,7 @@ __decorate([
 ], AiController.prototype, "summarizeAccount", null);
 exports.AiController = AiController = __decorate([
     (0, swagger_1.ApiTags)('AI'),
+    (0, common_1.UseFilters)(ai_exception_filter_1.AiExceptionFilter),
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [ai_insights_service_1.AiInsightsService])
 ], AiController);

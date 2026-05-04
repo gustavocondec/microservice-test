@@ -1,13 +1,20 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ClientNotFoundError } from '../../domain/errors/client-not-found.error';
+import { InvalidInitialBalanceError } from '../../domain/errors/invalid-initial-balance.error';
 import { AccountsService } from './accounts.service';
 
 describe('AccountsService', () => {
   const accountRepository = {
-    create: jest.fn((value) => value),
-    save: jest.fn(async (value) => value),
+    create: jest.fn(async (value) => ({
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      ...value,
+    })),
+    findByClientId: jest.fn(),
+    findById: jest.fn(),
   };
   const clientRepository = {
-    findOne: jest.fn(),
+    findByEmail: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
   };
   const eventsPublisher = {
     publish: jest.fn(),
@@ -25,7 +32,7 @@ describe('AccountsService', () => {
   });
 
   it('rejects account creation when client does not exist', async () => {
-    clientRepository.findOne.mockResolvedValue(null);
+    clientRepository.findById.mockResolvedValue(null);
 
     await expect(
       service.createAccount({
@@ -33,11 +40,11 @@ describe('AccountsService', () => {
         currency: 'usd',
         initialBalance: 10,
       }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(ClientNotFoundError);
   });
 
   it('rejects negative initial balances', async () => {
-    clientRepository.findOne.mockResolvedValue({ id: 'client-1' });
+    clientRepository.findById.mockResolvedValue({ id: 'client-1' });
 
     await expect(
       service.createAccount({
@@ -45,6 +52,6 @@ describe('AccountsService', () => {
         currency: 'usd',
         initialBalance: -1,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(InvalidInitialBalanceError);
   });
 });

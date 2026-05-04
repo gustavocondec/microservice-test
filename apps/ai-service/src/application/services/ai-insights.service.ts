@@ -1,28 +1,25 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import {
   type DomainEvent,
   type TransactionCompletedPayload,
   type TransactionRejectedPayload,
 } from '@app/contracts';
-import { ProcessedEventsService } from '@app/shared';
+import { AiInsightNotFoundError } from '../../domain/errors/ai-insight-not-found.error';
 import {
-  ExplainTransactionInput,
-  LLM_PORT,
-  LlmPort,
-  SummaryInsightInput,
+  type AiInsightRecord,
+  type AiInsightsRepository,
+} from '../ports/ai-insights.repository';
+import {
+  type ExplainTransactionInput,
+  type LlmPort,
+  type SummaryInsightInput,
 } from '../ports/llm.port';
-import { AiInsightEntity } from '../../infrastructure/persistence/entities/ai-insight.entity';
+import { type ProcessedEventsPort } from '../ports/processed-events.port';
 
-@Injectable()
 export class AiInsightsService {
   constructor(
-    @InjectRepository(AiInsightEntity)
-    private readonly aiInsightRepository: Repository<AiInsightEntity>,
-    private readonly processedEventsService: ProcessedEventsService,
-    @Inject(LLM_PORT)
+    private readonly aiInsightRepository: AiInsightsRepository,
+    private readonly processedEventsService: ProcessedEventsPort,
     private readonly llmPort: LlmPort,
   ) {}
 
@@ -35,20 +32,17 @@ export class AiInsightsService {
 
     const explanation = await this.llmPort.explainTransaction(this.toExplainInput(event.payload));
 
-    await this.aiInsightRepository.upsert(
-      {
-        id: randomUUID(),
-        transactionId: event.payload.transactionId,
-        type: event.payload.type,
-        status: event.payload.status,
-        amount: event.payload.amount,
-        sourceAccountId: event.payload.sourceAccountId ?? null,
-        targetAccountId: event.payload.targetAccountId ?? null,
-        reasonCode: null,
-        explanation,
-      },
-      ['transactionId'],
-    );
+    await this.aiInsightRepository.upsertByTransactionId({
+      id: randomUUID(),
+      transactionId: event.payload.transactionId,
+      type: event.payload.type,
+      status: event.payload.status,
+      amount: event.payload.amount,
+      sourceAccountId: event.payload.sourceAccountId ?? null,
+      targetAccountId: event.payload.targetAccountId ?? null,
+      reasonCode: null,
+      explanation,
+    });
 
     await this.processedEventsService.markProcessed(
       event.metadata.eventId,
@@ -65,20 +59,17 @@ export class AiInsightsService {
 
     const explanation = await this.llmPort.explainTransaction(this.toExplainInput(event.payload));
 
-    await this.aiInsightRepository.upsert(
-      {
-        id: randomUUID(),
-        transactionId: event.payload.transactionId,
-        type: event.payload.type,
-        status: event.payload.status,
-        amount: event.payload.amount,
-        sourceAccountId: event.payload.sourceAccountId ?? null,
-        targetAccountId: event.payload.targetAccountId ?? null,
-        reasonCode: event.payload.reasonCode,
-        explanation,
-      },
-      ['transactionId'],
-    );
+    await this.aiInsightRepository.upsertByTransactionId({
+      id: randomUUID(),
+      transactionId: event.payload.transactionId,
+      type: event.payload.type,
+      status: event.payload.status,
+      amount: event.payload.amount,
+      sourceAccountId: event.payload.sourceAccountId ?? null,
+      targetAccountId: event.payload.targetAccountId ?? null,
+      reasonCode: event.payload.reasonCode,
+      explanation,
+    });
 
     await this.processedEventsService.markProcessed(
       event.metadata.eventId,
@@ -86,25 +77,18 @@ export class AiInsightsService {
     );
   }
 
-  async getTransactionExplanation(transactionId: string): Promise<AiInsightEntity> {
-    const explanation = await this.aiInsightRepository.findOne({
-      where: { transactionId },
-    });
+  async getTransactionExplanation(transactionId: string): Promise<AiInsightRecord> {
+    const explanation = await this.aiInsightRepository.findByTransactionId(transactionId);
 
     if (!explanation) {
-      throw new NotFoundException('No explanation found for the provided transaction');
+      throw new AiInsightNotFoundError();
     }
 
     return explanation;
   }
 
   async summarizeAccount(accountId: string): Promise<{ accountId: string; summary: string }> {
-    const insights = await this.aiInsightRepository
-      .createQueryBuilder('insight')
-      .where('insight.sourceAccountId = :accountId', { accountId })
-      .orWhere('insight.targetAccountId = :accountId', { accountId })
-      .orderBy('insight.createdAt', 'ASC')
-      .getMany();
+    const insights = await this.aiInsightRepository.findByAccountId(accountId);
 
     const summary = await this.llmPort.summarizeAccountHistory(
       accountId,

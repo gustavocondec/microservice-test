@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseFilters } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { TransactionType } from '@app/contracts';
 import { TransactionsService } from '../../application/services/transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { TransactionsExceptionFilter } from './transactions-exception.filter';
 
 @ApiTags('Transactions')
+@UseFilters(TransactionsExceptionFilter)
 @Controller('transactions')
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
@@ -48,7 +50,14 @@ export class TransactionsController {
   })
   @Post()
   createTransaction(@Body() dto: CreateTransactionDto) {
-    return this.transactionsService.createTransaction(dto);
+    return this.transactionsService.createTransaction({
+      type: dto.type,
+      amount: dto.amount,
+      sourceAccountId: dto.sourceAccountId,
+      targetAccountId: dto.targetAccountId,
+      idempotencyKey: dto.idempotencyKey,
+      correlationId: dto.correlationId,
+    });
   }
 
   @ApiOperation({ summary: 'Consultar el estado de una transacción' })

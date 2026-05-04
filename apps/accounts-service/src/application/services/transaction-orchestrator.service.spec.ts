@@ -38,26 +38,23 @@ describe('TransactionOrchestratorService', () => {
 
   it('rejects withdrawals with insufficient funds', async () => {
     const accountRepository = {
-      findOne: jest.fn().mockResolvedValue({
+      findById: jest.fn().mockResolvedValue({
         id: 'acc-1',
         clientId: 'client-1',
         balance: 10,
       }),
-      save: jest.fn(),
+      saveAll: jest.fn(),
     };
-    const dataSource = {
-      transaction: jest.fn(async (callback: (manager: { getRepository: () => typeof accountRepository }) => unknown) =>
-        callback({
-          getRepository: () => accountRepository,
-        }),
+    const accountsUnitOfWork = {
+      run: jest.fn(async (callback: (repository: typeof accountRepository) => unknown) =>
+        callback(accountRepository),
       ),
     };
 
     processedEventsService.hasProcessed.mockResolvedValue(false);
 
     const service = new TransactionOrchestratorService(
-      dataSource as never,
-      {} as never,
+      accountsUnitOfWork as never,
       processedEventsService as never,
       accountsEventsPublisher as never,
     );
@@ -97,25 +94,22 @@ describe('TransactionOrchestratorService', () => {
       balance: 10,
     };
     const accountRepository = {
-      findOne: jest
+      findById: jest
         .fn()
         .mockResolvedValueOnce(sourceAccount)
         .mockResolvedValueOnce(targetAccount),
-      save: jest.fn(async (entities) => entities),
+      saveAll: jest.fn(async (entities) => entities),
     };
-    const dataSource = {
-      transaction: jest.fn(async (callback: (manager: { getRepository: () => typeof accountRepository }) => unknown) =>
-        callback({
-          getRepository: () => accountRepository,
-        }),
+    const accountsUnitOfWork = {
+      run: jest.fn(async (callback: (repository: typeof accountRepository) => unknown) =>
+        callback(accountRepository),
       ),
     };
 
     processedEventsService.hasProcessed.mockResolvedValue(false);
 
     const service = new TransactionOrchestratorService(
-      dataSource as never,
-      {} as never,
+      accountsUnitOfWork as never,
       processedEventsService as never,
       accountsEventsPublisher as never,
     );

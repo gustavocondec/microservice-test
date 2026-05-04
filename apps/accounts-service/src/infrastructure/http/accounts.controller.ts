@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseFilters } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AccountsService } from '../../application/services/accounts.service';
+import { AccountsExceptionFilter } from './accounts-exception.filter';
 import { CreateAccountDto } from './dto/create-account.dto';
 
 @ApiTags('Accounts')
+@UseFilters(AccountsExceptionFilter)
 @Controller()
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
@@ -11,7 +13,11 @@ export class AccountsController {
   @ApiOperation({ summary: 'Crear una cuenta bancaria' })
   @Post('accounts')
   createAccount(@Body() dto: CreateAccountDto) {
-    return this.accountsService.createAccount(dto);
+    return this.accountsService.createAccount({
+      clientId: dto.clientId,
+      currency: dto.currency,
+      initialBalance: dto.initialBalance,
+    });
   }
 
   @ApiOperation({ summary: 'Obtener una cuenta por ID' })

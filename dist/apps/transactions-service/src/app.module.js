@@ -11,6 +11,9 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const shared_1 = require("../../../libs/shared/src");
+const processed_events_port_1 = require("./application/ports/processed-events.port");
+const transactions_events_port_1 = require("./application/ports/transactions-events.port");
+const transactions_repository_1 = require("./application/ports/transactions.repository");
 const transactions_service_1 = require("./application/services/transactions.service");
 const health_controller_1 = require("./infrastructure/http/health.controller");
 const transactions_controller_1 = require("./infrastructure/http/transactions.controller");
@@ -18,6 +21,7 @@ const transactions_events_publisher_1 = require("./infrastructure/messaging/tran
 const transactions_consumer_1 = require("./infrastructure/messaging/transactions.consumer");
 const transaction_entity_1 = require("./infrastructure/persistence/entities/transaction.entity");
 const _1712701000000_init_transactions_1 = require("./infrastructure/persistence/migrations/1712701000000-init-transactions");
+const typeorm_transactions_repository_1 = require("./infrastructure/persistence/typeorm-transactions.repository");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -38,8 +42,25 @@ exports.AppModule = AppModule = __decorate([
             transactions_consumer_1.TransactionsEventsConsumerController,
         ],
         providers: [
-            transactions_service_1.TransactionsService,
+            {
+                provide: transactions_service_1.TransactionsService,
+                useFactory: (transactionRepository, processedEventsService, transactionsEventsPublisher) => new transactions_service_1.TransactionsService(transactionRepository, processedEventsService, transactionsEventsPublisher),
+                inject: [transactions_repository_1.TRANSACTIONS_REPOSITORY, processed_events_port_1.PROCESSED_EVENTS_PORT, transactions_events_port_1.TRANSACTIONS_EVENTS_PORT],
+            },
+            typeorm_transactions_repository_1.TypeOrmTransactionsRepository,
             transactions_events_publisher_1.TransactionsEventsPublisher,
+            {
+                provide: transactions_repository_1.TRANSACTIONS_REPOSITORY,
+                useExisting: typeorm_transactions_repository_1.TypeOrmTransactionsRepository,
+            },
+            {
+                provide: transactions_events_port_1.TRANSACTIONS_EVENTS_PORT,
+                useExisting: transactions_events_publisher_1.TransactionsEventsPublisher,
+            },
+            {
+                provide: processed_events_port_1.PROCESSED_EVENTS_PORT,
+                useExisting: shared_1.ProcessedEventsService,
+            },
             shared_1.DatabaseBootstrapService,
             shared_1.ProcessedEventsService,
         ],
