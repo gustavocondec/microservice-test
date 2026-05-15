@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  type CreateTransactionRecord,
-  type TransactionRecord,
-  type TransactionsRepository,
-} from '../../application/ports/transactions.repository';
+import { type TransactionsRepository } from '../../application/ports/transactions.repository';
+import { Transaction } from '../../domain/entities/transaction';
 import { TransactionEntity } from './entities/transaction.entity';
 
 @Injectable()
@@ -15,39 +12,31 @@ export class TypeOrmTransactionsRepository implements TransactionsRepository {
     private readonly transactionRepository: Repository<TransactionEntity>,
   ) {}
 
-  async create(input: CreateTransactionRecord): Promise<TransactionRecord> {
-    const transaction = this.transactionRepository.create(input);
+  async save(input: Transaction): Promise<Transaction> {
+    const transaction = this.transactionRepository.create(input.toSnapshot());
     const savedTransaction = await this.transactionRepository.save(transaction);
 
-    return this.toRecord(savedTransaction);
+    return this.toDomain(savedTransaction);
   }
 
-  async findById(transactionId: string): Promise<TransactionRecord | null> {
+  async findById(transactionId: string): Promise<Transaction | null> {
     const transaction = await this.transactionRepository.findOne({
       where: { id: transactionId },
     });
 
-    return transaction ? this.toRecord(transaction) : null;
+    return transaction ? this.toDomain(transaction) : null;
   }
 
-  async findByIdempotencyKey(idempotencyKey: string): Promise<TransactionRecord | null> {
+  async findByIdempotencyKey(idempotencyKey: string): Promise<Transaction | null> {
     const transaction = await this.transactionRepository.findOne({
       where: { idempotencyKey },
     });
 
-    return transaction ? this.toRecord(transaction) : null;
+    return transaction ? this.toDomain(transaction) : null;
   }
 
-  async save(transaction: TransactionRecord): Promise<TransactionRecord> {
-    const savedTransaction = await this.transactionRepository.save(
-      this.transactionRepository.create(transaction),
-    );
-
-    return this.toRecord(savedTransaction);
-  }
-
-  private toRecord(transaction: TransactionEntity): TransactionRecord {
-    return {
+  private toDomain(transaction: TransactionEntity): Transaction {
+    return Transaction.restore({
       id: transaction.id,
       type: transaction.type,
       status: transaction.status,
@@ -59,6 +48,6 @@ export class TypeOrmTransactionsRepository implements TransactionsRepository {
       rejectionMessage: transaction.rejectionMessage,
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
-    };
+    });
   }
 }

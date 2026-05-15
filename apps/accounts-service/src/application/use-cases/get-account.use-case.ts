@@ -1,10 +1,11 @@
 import { AccountNotFoundError } from '../../domain/errors/account-not-found.error';
-import { type AccountRecord, type AccountsRepository } from '../ports/accounts.repository';
+import { type Account } from '../../domain/entities/account';
+import { type AccountsRepository } from '../ports/accounts.repository';
 
 export class GetAccountUseCase {
   constructor(private readonly accountRepository: AccountsRepository) {}
 
-  async execute(accountId: string): Promise<AccountRecord> {
+  async execute(accountId: string): Promise<Account> {
     const account = await this.accountRepository.findById(accountId);
 
     if (!account) {

@@ -10,10 +10,10 @@ import {
   type TransactionRequestedPayload,
   TransactionType,
 } from '@app/contracts';
+import { Account } from '../../domain/entities/account';
 import { BusinessRuleError } from '../../domain/errors/business-rule.error';
 import { type AccountsEventsPort } from '../ports/accounts-events.port';
 import {
-  type AccountRecord,
   type AccountsTransactionRepository,
   type AccountsUnitOfWork,
 } from '../ports/accounts.repository';
@@ -96,21 +96,20 @@ export class HandleTransactionRequestedUseCase {
   ): Promise<AccountMutationResult> {
     return this.accountsUnitOfWork.run(async (accountRepository) => {
       const payload = event.payload;
-      const accountsToPersist: AccountRecord[] = [];
+      const accountsToPersist: Account[] = [];
       const balanceEvents: Array<DomainEvent<BalanceUpdatedPayload>> = [];
 
       switch (payload.type) {
         case TransactionType.DEPOSIT: {
           const targetAccount = await this.findRequiredAccount(accountRepository, payload.targetAccountId);
-          targetAccount.balance = Number((targetAccount.balance + payload.amount).toFixed(2));
+          targetAccount.deposit(payload.amount);
           accountsToPersist.push(targetAccount);
           balanceEvents.push(this.createBalanceEvent(targetAccount, payload.transactionId, event.metadata.correlationId));
           break;
         }
         case TransactionType.WITHDRAW: {
           const sourceAccount = await this.findRequiredAccount(accountRepository, payload.sourceAccountId);
-          this.ensureFunds(sourceAccount, payload.amount);
-          sourceAccount.balance = Number((sourceAccount.balance - payload.amount).toFixed(2));
+          sourceAccount.withdraw(payload.amount);
           accountsToPersist.push(sourceAccount);
           balanceEvents.push(this.createBalanceEvent(sourceAccount, payload.transactionId, event.metadata.correlationId));
           break;
@@ -119,9 +118,8 @@ export class HandleTransactionRequestedUseCase {
           const sourceAccount = await this.findRequiredAccount(accountRepository, payload.sourceAccountId);
           const targetAccount = await this.findRequiredAccount(accountRepository, payload.targetAccountId);
 
-          this.ensureFunds(sourceAccount, payload.amount);
-          sourceAccount.balance = Number((sourceAccount.balance - payload.amount).toFixed(2));
-          targetAccount.balance = Number((targetAccount.balance + payload.amount).toFixed(2));
+          sourceAccount.withdraw(payload.amount);
+          targetAccount.deposit(payload.amount);
           accountsToPersist.push(sourceAccount, targetAccount);
           balanceEvents.push(
             this.createBalanceEvent(sourceAccount, payload.transactionId, event.metadata.correlationId),
@@ -164,7 +162,7 @@ export class HandleTransactionRequestedUseCase {
   private async findRequiredAccount(
     repository: AccountsTransactionRepository,
     accountId: string | undefined,
-  ): Promise<AccountRecord> {
+  ): Promise<Account> {
     if (!accountId) {
       throw new BusinessRuleError(
         TransactionRejectionCode.INVALID_REQUEST,
@@ -184,17 +182,8 @@ export class HandleTransactionRequestedUseCase {
     return account;
   }
 
-  private ensureFunds(account: AccountRecord, amount: number): void {
-    if (account.balance < amount) {
-      throw new BusinessRuleError(
-        TransactionRejectionCode.INSUFFICIENT_FUNDS,
-        `Account ${account.id} does not have enough funds`,
-      );
-    }
-  }
-
   private createBalanceEvent(
-    account: AccountRecord,
+    account: Account,
     transactionId: string,
     correlationId: string,
   ): DomainEvent<BalanceUpdatedPayload> {

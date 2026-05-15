@@ -4,10 +4,7 @@ import { CreateAccountUseCase } from './create-account.use-case';
 
 describe('CreateAccountUseCase', () => {
   const accountRepository = {
-    create: jest.fn(async (value) => ({
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      ...value,
-    })),
+    save: jest.fn(async (account) => account),
     findByClientId: jest.fn(),
     findById: jest.fn(),
   };

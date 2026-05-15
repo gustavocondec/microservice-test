@@ -1,7 +1,6 @@
 import {
   type DomainEvent,
   type TransactionCompletedPayload,
-  TransactionStatus,
 } from '@app/contracts';
 import { type ProcessedEventsPort } from '../ports/processed-events.port';
 import { type TransactionsRepository } from '../ports/transactions.repository';
@@ -21,9 +20,7 @@ export class HandleTransactionCompletedUseCase {
 
     const transaction = await this.getTransactionUseCase.execute(event.payload.transactionId);
 
-    transaction.status = TransactionStatus.COMPLETED;
-    transaction.rejectionCode = null;
-    transaction.rejectionMessage = null;
+    transaction.complete();
 
     await this.transactionRepository.save(transaction);
     await this.processedEventsService.markProcessed(

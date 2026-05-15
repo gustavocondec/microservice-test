@@ -4,6 +4,7 @@ import {
   TransactionType,
   type TransactionRequestedPayload,
 } from '@app/contracts';
+import { Account } from '../../domain/entities/account';
 import { HandleTransactionRequestedUseCase } from './handle-transaction-requested.use-case';
 
 describe('HandleTransactionRequestedUseCase', () => {
@@ -38,11 +39,13 @@ describe('HandleTransactionRequestedUseCase', () => {
 
   it('rejects withdrawals with insufficient funds', async () => {
     const accountRepository = {
-      findById: jest.fn().mockResolvedValue({
+      findById: jest.fn().mockResolvedValue(Account.restore({
         id: 'acc-1',
         clientId: 'client-1',
+        currency: 'USD',
         balance: 10,
-      }),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      })),
       saveAll: jest.fn(),
     };
     const accountsUnitOfWork = {
@@ -83,16 +86,20 @@ describe('HandleTransactionRequestedUseCase', () => {
   });
 
   it('processes valid transfers and publishes resulting events', async () => {
-    const sourceAccount = {
+    const sourceAccount = Account.restore({
       id: 'acc-1',
       clientId: 'client-1',
+      currency: 'USD',
       balance: 100,
-    };
-    const targetAccount = {
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    const targetAccount = Account.restore({
       id: 'acc-2',
       clientId: 'client-2',
+      currency: 'USD',
       balance: 10,
-    };
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
     const accountRepository = {
       findById: jest
         .fn()

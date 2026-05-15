@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 import { KafkaTopics, type AccountCreatedPayload, type DomainEvent } from '@app/contracts';
 import { ClientNotFoundError } from '../../domain/errors/client-not-found.error';
-import { InvalidInitialBalanceError } from '../../domain/errors/invalid-initial-balance.error';
+import { Account } from '../../domain/entities/account';
 import { type AccountsEventsPort } from '../ports/accounts-events.port';
-import { type AccountRecord, type AccountsRepository } from '../ports/accounts.repository';
+import { type AccountsRepository } from '../ports/accounts.repository';
 import { type ClientsRepository } from '../ports/clients.repository';
 
 export type CreateAccountInput = {
@@ -19,41 +19,38 @@ export class CreateAccountUseCase {
     private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async execute(input: CreateAccountInput): Promise<AccountRecord> {
+  async execute(input: CreateAccountInput): Promise<Account> {
     const client = await this.clientRepository.findById(input.clientId);
 
     if (!client) {
       throw new ClientNotFoundError();
     }
 
-    if (input.initialBalance < 0) {
-      throw new InvalidInitialBalanceError();
-    }
-
-    const account = await this.accountRepository.create({
+    const account = Account.create({
       id: randomUUID(),
       clientId: input.clientId,
-      currency: input.currency.toUpperCase(),
-      balance: Number(input.initialBalance ?? 0),
+      currency: input.currency,
+      initialBalance: Number(input.initialBalance ?? 0),
     });
+    const savedAccount = await this.accountRepository.save(account);
 
     const event: DomainEvent<AccountCreatedPayload> = {
       metadata: {
         eventId: randomUUID(),
         eventType: KafkaTopics.AccountCreated,
         occurredAt: new Date().toISOString(),
-        correlationId: account.id,
+        correlationId: savedAccount.id,
       },
       payload: {
-        accountId: account.id,
-        clientId: account.clientId,
-        currency: account.currency,
-        balance: account.balance,
+        accountId: savedAccount.id,
+        clientId: savedAccount.clientId,
+        currency: savedAccount.currency,
+        balance: savedAccount.balance,
       },
     };
 
     await this.accountsEventsPublisher.publish(KafkaTopics.AccountCreated, event);
 
-    return account;
+    return savedAccount;
   }
 }
