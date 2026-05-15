@@ -22,7 +22,7 @@ describe('CreateAccountUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useCase = new CreateAccountUseCase(
-      accountRepository as never,
+      accountRepository,
       clientRepository as never,
       eventsPublisher as never,
     );

@@ -1,9 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { AccountNotFoundError } from '../../domain/errors/account-not-found.error';
 import { ClientNotFoundError } from '../../domain/errors/client-not-found.error';

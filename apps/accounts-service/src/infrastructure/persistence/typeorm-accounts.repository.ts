@@ -41,7 +41,9 @@ export class TypeOrmAccountsRepository implements AccountsRepository, AccountsUn
   }
 
   async run<T>(handler: (repository: AccountsTransactionRepository) => Promise<T>): Promise<T> {
-    return this.dataSource.transaction(async (manager) => handler(this.createTransactionRepository(manager)));
+    return this.dataSource.transaction(async (manager) =>
+      handler(this.createTransactionRepository(manager)),
+    );
   }
 
   private createTransactionRepository(manager: EntityManager): AccountsTransactionRepository {

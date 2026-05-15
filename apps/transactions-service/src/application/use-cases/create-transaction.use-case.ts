@@ -3,20 +3,20 @@ import {
   type DomainEvent,
   KafkaTopics,
   type TransactionRequestedPayload,
-  TransactionType,
+  type TransactionType,
 } from '@app/contracts';
 import { Transaction } from '../../domain/entities/transaction';
 import { type TransactionsEventsPort } from '../ports/transactions-events.port';
 import { type TransactionsRepository } from '../ports/transactions.repository';
 
-export type CreateTransactionInput = {
+export interface CreateTransactionInput {
   type: TransactionType;
   amount: number;
   sourceAccountId?: string;
   targetAccountId?: string;
   idempotencyKey: string;
   correlationId?: string;
-};
+}
 
 export class CreateTransactionUseCase {
   constructor(
@@ -36,7 +36,7 @@ export class CreateTransactionUseCase {
     const transaction = Transaction.create({
       id: randomUUID(),
       type: input.type,
-      amount: Number(input.amount),
+      amount: input.amount,
       sourceAccountId: input.sourceAccountId ?? null,
       targetAccountId: input.targetAccountId ?? null,
       idempotencyKey: input.idempotencyKey,

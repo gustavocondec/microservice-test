@@ -16,7 +16,7 @@ export class ClientsController {
 
   @ApiOperation({ summary: 'Registrar un nuevo cliente' })
   @Post()
-  createClient(@Body() dto: CreateClientDto) {
+  createClient(@Body() dto: CreateClientDto): ReturnType<CreateClientUseCase['execute']> {
     return this.createClientUseCase.execute({
       name: dto.name,
       email: dto.email,
@@ -25,7 +25,7 @@ export class ClientsController {
 
   @ApiOperation({ summary: 'Listar clientes' })
   @Get()
-  listClients() {
+  listClients(): ReturnType<ListClientsUseCase['execute']> {
     return this.listClientsUseCase.execute();
   }
 }

@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { CreateAccountUseCase } from '../../application/use-cases/create-account.use-case';
@@ -78,9 +78,7 @@ describe('Accounts HTTP API (e2e)', () => {
       },
     ]);
 
-    const response = await request(app.getHttpServer())
-      .get('/clients')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/clients').expect(200);
 
     expect(response.body).toEqual([
       {

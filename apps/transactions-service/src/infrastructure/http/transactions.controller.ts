@@ -53,7 +53,9 @@ export class TransactionsController {
     },
   })
   @Post()
-  createTransaction(@Body() dto: CreateTransactionDto) {
+  createTransaction(
+    @Body() dto: CreateTransactionDto,
+  ): ReturnType<CreateTransactionUseCase['execute']> {
     return this.createTransactionUseCase.execute({
       type: dto.type,
       amount: dto.amount,
@@ -67,7 +69,9 @@ export class TransactionsController {
   @ApiOperation({ summary: 'Consultar el estado de una transacción' })
   @ApiParam({ name: 'transactionId', description: 'UUID de la transacción' })
   @Get(':transactionId')
-  getTransaction(@Param('transactionId') transactionId: string) {
+  getTransaction(
+    @Param('transactionId') transactionId: string,
+  ): ReturnType<GetTransactionUseCase['execute']> {
     return this.getTransactionUseCase.execute(transactionId);
   }
 }

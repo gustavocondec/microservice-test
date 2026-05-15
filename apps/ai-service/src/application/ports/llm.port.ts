@@ -1,6 +1,10 @@
-import { TransactionRejectionCode, TransactionStatus, TransactionType } from '@app/contracts';
+import {
+  type TransactionRejectionCode,
+  type TransactionStatus,
+  type TransactionType,
+} from '@app/contracts';
 
-export type ExplainTransactionInput = {
+export interface ExplainTransactionInput {
   transactionId: string;
   type: TransactionType;
   status: TransactionStatus;
@@ -9,9 +13,9 @@ export type ExplainTransactionInput = {
   targetAccountId?: string;
   reasonCode?: TransactionRejectionCode;
   reasonMessage?: string;
-};
+}
 
-export type SummaryInsightInput = {
+export interface SummaryInsightInput {
   transactionId: string;
   type: TransactionType;
   status: TransactionStatus;
@@ -20,7 +24,7 @@ export type SummaryInsightInput = {
   targetAccountId?: string | null;
   explanation: string;
   createdAt: Date;
-};
+}
 
 export const LLM_PORT = 'LLM_PORT';
 

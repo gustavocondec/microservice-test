@@ -4,10 +4,10 @@ import { DuplicateClientEmailError } from '../../domain/errors/duplicate-client-
 import { type AccountsEventsPort } from '../ports/accounts-events.port';
 import { type ClientRecord, type ClientsRepository } from '../ports/clients.repository';
 
-export type CreateClientInput = {
+export interface CreateClientInput {
   name: string;
   email: string;
-};
+}
 
 export class CreateClientUseCase {
   constructor(

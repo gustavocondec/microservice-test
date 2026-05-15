@@ -6,11 +6,11 @@ import { type AccountsEventsPort } from '../ports/accounts-events.port';
 import { type AccountsRepository } from '../ports/accounts.repository';
 import { type ClientsRepository } from '../ports/clients.repository';
 
-export type CreateAccountInput = {
+export interface CreateAccountInput {
   clientId: string;
   currency: string;
   initialBalance: number;
-};
+}
 
 export class CreateAccountUseCase {
   constructor(
@@ -30,7 +30,7 @@ export class CreateAccountUseCase {
       id: randomUUID(),
       clientId: input.clientId,
       currency: input.currency,
-      initialBalance: Number(input.initialBalance ?? 0),
+      initialBalance: input.initialBalance,
     });
     const savedAccount = await this.accountRepository.save(account);
 

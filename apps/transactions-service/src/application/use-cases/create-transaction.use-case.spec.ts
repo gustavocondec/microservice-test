@@ -18,10 +18,7 @@ describe('CreateTransactionUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     transactionRepository.findByIdempotencyKey.mockResolvedValue(null);
-    useCase = new CreateTransactionUseCase(
-      transactionRepository as never,
-      eventsPublisher as never,
-    );
+    useCase = new CreateTransactionUseCase(transactionRepository, eventsPublisher as never);
   });
 
   it('returns the existing transaction when idempotencyKey already exists', async () => {

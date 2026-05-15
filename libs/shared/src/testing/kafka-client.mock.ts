@@ -1,5 +1,7 @@
-export const createKafkaClientMock = () => ({
-  emit: jest.fn().mockReturnValue({
-    toPromise: async () => undefined,
-  }),
+export const createKafkaClientMock = (): {
+  emit: jest.Mock<{ toPromise: () => Promise<void> }, []>;
+} => ({
+  emit: jest.fn<{ toPromise: () => Promise<void> }, []>(() => ({
+    toPromise: () => Promise.resolve(),
+  })),
 });

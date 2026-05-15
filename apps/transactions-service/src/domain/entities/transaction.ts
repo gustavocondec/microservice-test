@@ -1,11 +1,7 @@
-import {
-  TransactionRejectionCode,
-  TransactionStatus,
-  TransactionType,
-} from '@app/contracts';
+import { type TransactionRejectionCode, TransactionStatus, TransactionType } from '@app/contracts';
 import { InvalidTransactionError } from '../errors/invalid-transaction.error';
 
-export type TransactionSnapshot = {
+export interface TransactionSnapshot {
   id: string;
   type: TransactionType;
   status: TransactionStatus;
@@ -17,21 +13,19 @@ export type TransactionSnapshot = {
   rejectionMessage?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
-};
+}
 
-export type CreateTransactionProps = {
+export interface CreateTransactionProps {
   id: string;
   type: TransactionType;
   amount: number;
   sourceAccountId?: string | null;
   targetAccountId?: string | null;
   idempotencyKey: string;
-};
+}
 
 export class Transaction {
-  private constructor(
-    private readonly props: TransactionSnapshot,
-  ) {}
+  private constructor(private readonly props: TransactionSnapshot) {}
 
   static create(props: CreateTransactionProps): Transaction {
     this.validateRequest(props);

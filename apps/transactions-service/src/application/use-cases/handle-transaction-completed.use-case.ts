@@ -1,10 +1,7 @@
-import {
-  type DomainEvent,
-  type TransactionCompletedPayload,
-} from '@app/contracts';
+import { type DomainEvent, type TransactionCompletedPayload } from '@app/contracts';
 import { type ProcessedEventsPort } from '../ports/processed-events.port';
 import { type TransactionsRepository } from '../ports/transactions.repository';
-import { GetTransactionUseCase } from './get-transaction.use-case';
+import { type GetTransactionUseCase } from './get-transaction.use-case';
 
 export class HandleTransactionCompletedUseCase {
   constructor(

@@ -1,12 +1,4 @@
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Min,
-  ValidateIf,
-} from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateIf } from 'class-validator';
 import { TransactionType } from '@app/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -32,8 +24,9 @@ export class CreateTransactionDto {
     example: '1094ea9a-7f22-4d0e-8d6b-d8f69ef0bd0c',
     description: 'Cuenta origen para retiros o transferencias',
   })
-  @ValidateIf((o: CreateTransactionDto) =>
-    o.type === TransactionType.WITHDRAW || o.type === TransactionType.TRANSFER,
+  @ValidateIf(
+    (o: CreateTransactionDto) =>
+      o.type === TransactionType.WITHDRAW || o.type === TransactionType.TRANSFER,
   )
   @IsUUID()
   sourceAccountId?: string;
@@ -42,8 +35,9 @@ export class CreateTransactionDto {
     example: 'e9055df1-325c-4ce1-b8fb-c835f0927e8a',
     description: 'Cuenta destino para depósitos o transferencias',
   })
-  @ValidateIf((o: CreateTransactionDto) =>
-    o.type === TransactionType.DEPOSIT || o.type === TransactionType.TRANSFER,
+  @ValidateIf(
+    (o: CreateTransactionDto) =>
+      o.type === TransactionType.DEPOSIT || o.type === TransactionType.TRANSFER,
   )
   @IsUUID()
   targetAccountId?: string;

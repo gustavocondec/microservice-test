@@ -1,4 +1,4 @@
-import { Transaction } from '../../domain/entities/transaction';
+import { type Transaction } from '../../domain/entities/transaction';
 
 export const TRANSACTIONS_REPOSITORY = 'TRANSACTIONS_REPOSITORY';
 

@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import {
   type BalanceUpdatedPayload,
   type DomainEvent,
+  type EventMetadata,
   KafkaTopics,
   TransactionRejectionCode,
   TransactionStatus,
@@ -10,7 +11,7 @@ import {
   type TransactionRequestedPayload,
   TransactionType,
 } from '@app/contracts';
-import { Account } from '../../domain/entities/account';
+import { type Account } from '../../domain/entities/account';
 import { BusinessRuleError } from '../../domain/errors/business-rule.error';
 import { type AccountsEventsPort } from '../ports/accounts-events.port';
 import {
@@ -19,10 +20,10 @@ import {
 } from '../ports/accounts.repository';
 import { type ProcessedEventsPort } from '../ports/processed-events.port';
 
-type AccountMutationResult = {
-  balanceEvents: Array<DomainEvent<BalanceUpdatedPayload>>;
+interface AccountMutationResult {
+  balanceEvents: DomainEvent<BalanceUpdatedPayload>[];
   finalEvent: DomainEvent<TransactionCompletedPayload> | DomainEvent<TransactionRejectedPayload>;
-};
+}
 
 export class HandleTransactionRequestedUseCase {
   constructor(
@@ -73,16 +74,10 @@ export class HandleTransactionRequestedUseCase {
 
     if ('completedAt' in result.finalEvent.payload) {
       const completedEvent = result.finalEvent as DomainEvent<TransactionCompletedPayload>;
-      await this.accountsEventsPublisher.publish(
-        KafkaTopics.TransactionCompleted,
-        completedEvent,
-      );
+      await this.accountsEventsPublisher.publish(KafkaTopics.TransactionCompleted, completedEvent);
     } else {
       const rejectedEvent = result.finalEvent as DomainEvent<TransactionRejectedPayload>;
-      await this.accountsEventsPublisher.publish(
-        KafkaTopics.TransactionRejected,
-        rejectedEvent,
-      );
+      await this.accountsEventsPublisher.publish(KafkaTopics.TransactionRejected, rejectedEvent);
     }
 
     await this.processedEventsService.markProcessed(
@@ -97,33 +92,65 @@ export class HandleTransactionRequestedUseCase {
     return this.accountsUnitOfWork.run(async (accountRepository) => {
       const payload = event.payload;
       const accountsToPersist: Account[] = [];
-      const balanceEvents: Array<DomainEvent<BalanceUpdatedPayload>> = [];
+      const balanceEvents: DomainEvent<BalanceUpdatedPayload>[] = [];
 
       switch (payload.type) {
         case TransactionType.DEPOSIT: {
-          const targetAccount = await this.findRequiredAccount(accountRepository, payload.targetAccountId);
+          const targetAccount = await this.findRequiredAccount(
+            accountRepository,
+            payload.targetAccountId,
+          );
           targetAccount.deposit(payload.amount);
           accountsToPersist.push(targetAccount);
-          balanceEvents.push(this.createBalanceEvent(targetAccount, payload.transactionId, event.metadata.correlationId));
+          balanceEvents.push(
+            this.createBalanceEvent(
+              targetAccount,
+              payload.transactionId,
+              event.metadata.correlationId,
+            ),
+          );
           break;
         }
         case TransactionType.WITHDRAW: {
-          const sourceAccount = await this.findRequiredAccount(accountRepository, payload.sourceAccountId);
+          const sourceAccount = await this.findRequiredAccount(
+            accountRepository,
+            payload.sourceAccountId,
+          );
           sourceAccount.withdraw(payload.amount);
           accountsToPersist.push(sourceAccount);
-          balanceEvents.push(this.createBalanceEvent(sourceAccount, payload.transactionId, event.metadata.correlationId));
+          balanceEvents.push(
+            this.createBalanceEvent(
+              sourceAccount,
+              payload.transactionId,
+              event.metadata.correlationId,
+            ),
+          );
           break;
         }
         case TransactionType.TRANSFER: {
-          const sourceAccount = await this.findRequiredAccount(accountRepository, payload.sourceAccountId);
-          const targetAccount = await this.findRequiredAccount(accountRepository, payload.targetAccountId);
+          const sourceAccount = await this.findRequiredAccount(
+            accountRepository,
+            payload.sourceAccountId,
+          );
+          const targetAccount = await this.findRequiredAccount(
+            accountRepository,
+            payload.targetAccountId,
+          );
 
           sourceAccount.withdraw(payload.amount);
           targetAccount.deposit(payload.amount);
           accountsToPersist.push(sourceAccount, targetAccount);
           balanceEvents.push(
-            this.createBalanceEvent(sourceAccount, payload.transactionId, event.metadata.correlationId),
-            this.createBalanceEvent(targetAccount, payload.transactionId, event.metadata.correlationId),
+            this.createBalanceEvent(
+              sourceAccount,
+              payload.transactionId,
+              event.metadata.correlationId,
+            ),
+            this.createBalanceEvent(
+              targetAccount,
+              payload.transactionId,
+              event.metadata.correlationId,
+            ),
           );
           break;
         }
@@ -198,7 +225,7 @@ export class HandleTransactionRequestedUseCase {
     };
   }
 
-  private createEventMetadata(eventType: string, correlationId: string) {
+  private createEventMetadata(eventType: string, correlationId: string): EventMetadata {
     return {
       eventId: randomUUID(),
       eventType,

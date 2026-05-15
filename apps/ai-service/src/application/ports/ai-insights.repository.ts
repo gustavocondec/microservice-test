@@ -1,8 +1,12 @@
-import { type TransactionRejectionCode, type TransactionStatus, type TransactionType } from '@app/contracts';
+import {
+  type TransactionRejectionCode,
+  type TransactionStatus,
+  type TransactionType,
+} from '@app/contracts';
 
 export const AI_INSIGHTS_REPOSITORY = 'AI_INSIGHTS_REPOSITORY';
 
-export type AiInsightRecord = {
+export interface AiInsightRecord {
   id: string;
   transactionId: string;
   type: TransactionType;
@@ -14,9 +18,9 @@ export type AiInsightRecord = {
   explanation: string;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-export type UpsertAiInsightRecord = {
+export interface UpsertAiInsightRecord {
   id: string;
   transactionId: string;
   type: TransactionType;
@@ -26,7 +30,7 @@ export type UpsertAiInsightRecord = {
   targetAccountId?: string | null;
   reasonCode?: TransactionRejectionCode | null;
   explanation: string;
-};
+}
 
 export interface AiInsightsRepository {
   findByAccountId(accountId: string): Promise<AiInsightRecord[]>;

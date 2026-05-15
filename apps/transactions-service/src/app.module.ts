@@ -41,11 +41,7 @@ import { TypeOrmTransactionsRepository } from './infrastructure/persistence/type
     TypeOrmModule.forFeature([TransactionEntity, ProcessedEventEntity]),
     KafkaClientsModule.register(TRANSACTIONS_KAFKA_CLIENT, 'transactions-service-publisher'),
   ],
-  controllers: [
-    TransactionsController,
-    HealthController,
-    TransactionsEventsConsumerController,
-  ],
+  controllers: [TransactionsController, HealthController, TransactionsEventsConsumerController],
   providers: [
     {
       provide: CreateTransactionUseCase,

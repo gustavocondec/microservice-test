@@ -2,25 +2,23 @@ import { TransactionRejectionCode } from '@app/contracts';
 import { BusinessRuleError } from '../errors/business-rule.error';
 import { InvalidInitialBalanceError } from '../errors/invalid-initial-balance.error';
 
-export type AccountSnapshot = {
+export interface AccountSnapshot {
   id: string;
   clientId: string;
   currency: string;
   balance: number;
   createdAt?: Date;
-};
+}
 
-export type CreateAccountProps = {
+export interface CreateAccountProps {
   id: string;
   clientId: string;
   currency: string;
   initialBalance: number;
-};
+}
 
 export class Account {
-  private constructor(
-    private readonly props: AccountSnapshot,
-  ) {}
+  private constructor(private readonly props: AccountSnapshot) {}
 
   static create(props: CreateAccountProps): Account {
     if (props.initialBalance < 0) {

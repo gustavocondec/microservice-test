@@ -1,4 +1,4 @@
-import { TransactionRejectionCode } from '@app/contracts';
+import { type TransactionRejectionCode } from '@app/contracts';
 
 export class BusinessRuleError extends Error {
   constructor(

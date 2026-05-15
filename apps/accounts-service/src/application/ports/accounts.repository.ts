@@ -1,4 +1,4 @@
-import { Account } from '../../domain/entities/account';
+import { type Account } from '../../domain/entities/account';
 
 export const ACCOUNTS_REPOSITORY = 'ACCOUNTS_REPOSITORY';
 export const ACCOUNTS_UNIT_OF_WORK = 'ACCOUNTS_UNIT_OF_WORK';

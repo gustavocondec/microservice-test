@@ -1,4 +1,8 @@
-import { TransactionRejectionCode, TransactionStatus, TransactionType } from './transactions';
+import {
+  type TransactionRejectionCode,
+  type TransactionStatus,
+  type TransactionType,
+} from './transactions';
 
 export interface EventMetadata {
   eventId: string;

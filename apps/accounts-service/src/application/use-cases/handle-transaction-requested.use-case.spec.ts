@@ -20,7 +20,9 @@ describe('HandleTransactionRequestedUseCase', () => {
     jest.clearAllMocks();
   });
 
-  const buildEvent = (payload: Partial<TransactionRequestedPayload>): DomainEvent<TransactionRequestedPayload> => ({
+  const buildEvent = (
+    payload: Partial<TransactionRequestedPayload>,
+  ): DomainEvent<TransactionRequestedPayload> => ({
     metadata: {
       eventId: 'event-1',
       eventType: KafkaTopics.TransactionRequested,
@@ -39,13 +41,15 @@ describe('HandleTransactionRequestedUseCase', () => {
 
   it('rejects withdrawals with insufficient funds', async () => {
     const accountRepository = {
-      findById: jest.fn().mockResolvedValue(Account.restore({
-        id: 'acc-1',
-        clientId: 'client-1',
-        currency: 'USD',
-        balance: 10,
-        createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      })),
+      findById: jest.fn().mockResolvedValue(
+        Account.restore({
+          id: 'acc-1',
+          clientId: 'client-1',
+          currency: 'USD',
+          balance: 10,
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        }),
+      ),
       saveAll: jest.fn(),
     };
     const accountsUnitOfWork = {
@@ -58,7 +62,7 @@ describe('HandleTransactionRequestedUseCase', () => {
 
     const useCase = new HandleTransactionRequestedUseCase(
       accountsUnitOfWork as never,
-      processedEventsService as never,
+      processedEventsService,
       accountsEventsPublisher as never,
     );
 
@@ -101,10 +105,7 @@ describe('HandleTransactionRequestedUseCase', () => {
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
     });
     const accountRepository = {
-      findById: jest
-        .fn()
-        .mockResolvedValueOnce(sourceAccount)
-        .mockResolvedValueOnce(targetAccount),
+      findById: jest.fn().mockResolvedValueOnce(sourceAccount).mockResolvedValueOnce(targetAccount),
       saveAll: jest.fn(async (entities) => entities),
     };
     const accountsUnitOfWork = {
@@ -117,7 +118,7 @@ describe('HandleTransactionRequestedUseCase', () => {
 
     const useCase = new HandleTransactionRequestedUseCase(
       accountsUnitOfWork as never,
-      processedEventsService as never,
+      processedEventsService,
       accountsEventsPublisher as never,
     );
 

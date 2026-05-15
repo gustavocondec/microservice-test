@@ -28,8 +28,8 @@ async function bootstrap(): Promise<void> {
   await app.startAllMicroservices();
   await app.listen(port);
 
-  logger.log(`transactions-service listening on port ${port}`);
+  logger.log(`transactions-service listening on port ${String(port)}`);
   logger.log(`Swagger available at /${swaggerPath}`);
 }
 
-bootstrap();
+void bootstrap();

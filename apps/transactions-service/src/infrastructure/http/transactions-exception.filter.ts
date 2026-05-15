@@ -1,9 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { InvalidTransactionError } from '../../domain/errors/invalid-transaction.error';
 import { TransactionNotFoundError } from '../../domain/errors/transaction-not-found.error';
@@ -15,9 +10,7 @@ export class TransactionsExceptionFilter implements ExceptionFilter<Transactions
   catch(exception: TransactionsHttpError, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
     const status =
-      exception instanceof InvalidTransactionError
-        ? HttpStatus.BAD_REQUEST
-        : HttpStatus.NOT_FOUND;
+      exception instanceof InvalidTransactionError ? HttpStatus.BAD_REQUEST : HttpStatus.NOT_FOUND;
 
     response.status(status).json({
       statusCode: status,

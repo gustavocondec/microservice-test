@@ -1,6 +1,8 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { KafkaOptions, Transport } from '@nestjs/microservices';
-import { ConfigService } from '@nestjs/config';
+import { type Type } from '@nestjs/common';
+import { type ConfigService } from '@nestjs/config';
+import { type EventMetadata } from '@app/contracts';
+import { type KafkaOptions, Transport } from '@nestjs/microservices';
+import { type TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 
 export const getRequired = (configService: ConfigService, key: string): string => {
@@ -15,8 +17,8 @@ export const getRequired = (configService: ConfigService, key: string): string =
 
 export const buildTypeOrmOptions = (
   configService: ConfigService,
-  entities: Function[],
-  migrations: Function[],
+  entities: Type<unknown>[],
+  migrations: Type<unknown>[],
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: getRequired(configService, 'DB_HOST'),
@@ -50,7 +52,7 @@ export const buildKafkaOptions = (
   },
 });
 
-export const buildEventMetadata = (eventType: string, correlationId?: string) => ({
+export const buildEventMetadata = (eventType: string, correlationId?: string): EventMetadata => ({
   eventId: randomUUID(),
   eventType,
   occurredAt: new Date().toISOString(),

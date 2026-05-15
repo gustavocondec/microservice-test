@@ -2,7 +2,7 @@ services:
   accounts-service:
     environment:
       NODE_ENV: development
-    command: ["npm", "run", "start:watch:accounts"]
+    command: ['npm', 'run', 'start:watch:accounts']
     volumes:
       - .:/app
       - /app/node_modules
@@ -10,7 +10,7 @@ services:
   transactions-service:
     environment:
       NODE_ENV: development
-    command: ["npm", "run", "start:watch:transactions"]
+    command: ['npm', 'run', 'start:watch:transactions']
     volumes:
       - .:/app
       - /app/node_modules
@@ -18,7 +18,7 @@ services:
   ai-service:
     environment:
       NODE_ENV: development
-    command: ["npm", "run", "start:watch:ai"]
+    command: ['npm', 'run', 'start:watch:ai']
     volumes:
       - .:/app
       - /app/node_modules

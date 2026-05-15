@@ -53,21 +53,13 @@ import { TypeOrmAiInsightsRepository } from './infrastructure/persistence/typeor
     {
       provide: HandleTransactionCompletedUseCase,
       useFactory: (aiInsightRepository, processedEventsService, llmPort) =>
-        new HandleTransactionCompletedUseCase(
-          aiInsightRepository,
-          processedEventsService,
-          llmPort,
-        ),
+        new HandleTransactionCompletedUseCase(aiInsightRepository, processedEventsService, llmPort),
       inject: [AI_INSIGHTS_REPOSITORY, PROCESSED_EVENTS_PORT, LLM_PORT],
     },
     {
       provide: HandleTransactionRejectedUseCase,
       useFactory: (aiInsightRepository, processedEventsService, llmPort) =>
-        new HandleTransactionRejectedUseCase(
-          aiInsightRepository,
-          processedEventsService,
-          llmPort,
-        ),
+        new HandleTransactionRejectedUseCase(aiInsightRepository, processedEventsService, llmPort),
       inject: [AI_INSIGHTS_REPOSITORY, PROCESSED_EVENTS_PORT, LLM_PORT],
     },
     TypeOrmAiInsightsRepository,

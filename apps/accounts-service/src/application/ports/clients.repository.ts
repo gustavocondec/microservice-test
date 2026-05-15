@@ -1,17 +1,17 @@
 export const CLIENTS_REPOSITORY = 'CLIENTS_REPOSITORY';
 
-export type ClientRecord = {
+export interface ClientRecord {
   id: string;
   name: string;
   email: string;
   createdAt: Date;
-};
+}
 
-export type CreateClientRecord = {
+export interface CreateClientRecord {
   id: string;
   name: string;
   email: string;
-};
+}
 
 export interface ClientsRepository {
   create(input: CreateClientRecord): Promise<ClientRecord>;
