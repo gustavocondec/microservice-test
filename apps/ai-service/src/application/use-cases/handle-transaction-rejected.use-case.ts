@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { type DomainEvent, type TransactionRejectedPayload } from '@app/contracts';
+import { AiInsight } from '../../domain/entities/ai-insight';
 import { type AiInsightsRepository } from '../ports/ai-insights.repository';
 import { type ExplainTransactionInput, type LlmPort } from '../ports/llm.port';
 import { type ProcessedEventsPort } from '../ports/processed-events.port';
@@ -18,7 +19,7 @@ export class HandleTransactionRejectedUseCase {
 
     const explanation = await this.llmPort.explainTransaction(this.toExplainInput(event.payload));
 
-    await this.aiInsightRepository.upsertByTransactionId({
+    const insight = AiInsight.create({
       id: randomUUID(),
       transactionId: event.payload.transactionId,
       type: event.payload.type,
@@ -29,6 +30,8 @@ export class HandleTransactionRejectedUseCase {
       reasonCode: event.payload.reasonCode,
       explanation,
     });
+
+    await this.aiInsightRepository.upsertByTransactionId(insight);
 
     await this.processedEventsService.markProcessed(
       event.metadata.eventId,

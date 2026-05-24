@@ -20,7 +20,7 @@ export class SummarizeAccountUseCase {
         sourceAccountId: insight.sourceAccountId,
         targetAccountId: insight.targetAccountId,
         explanation: insight.explanation,
-        createdAt: insight.createdAt,
+        createdAt: insight.createdAt ?? new Date(0),
       })),
     );
 

@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  type AiInsightRecord,
-  type AiInsightsRepository,
-  type UpsertAiInsightRecord,
-} from '../../application/ports/ai-insights.repository';
+import { type AiInsightsRepository } from '../../application/ports/ai-insights.repository';
+import { AiInsight } from '../../domain/entities/ai-insight';
 import { AiInsightEntity } from './entities/ai-insight.entity';
 
 @Injectable()
@@ -15,7 +12,7 @@ export class TypeOrmAiInsightsRepository implements AiInsightsRepository {
     private readonly aiInsightRepository: Repository<AiInsightEntity>,
   ) {}
 
-  async findByAccountId(accountId: string): Promise<AiInsightRecord[]> {
+  async findByAccountId(accountId: string): Promise<AiInsight[]> {
     const insights = await this.aiInsightRepository
       .createQueryBuilder('insight')
       .where('insight.sourceAccountId = :accountId', { accountId })
@@ -23,23 +20,23 @@ export class TypeOrmAiInsightsRepository implements AiInsightsRepository {
       .orderBy('insight.createdAt', 'ASC')
       .getMany();
 
-    return insights.map((insight) => this.toRecord(insight));
+    return insights.map((insight) => this.toDomain(insight));
   }
 
-  async findByTransactionId(transactionId: string): Promise<AiInsightRecord | null> {
+  async findByTransactionId(transactionId: string): Promise<AiInsight | null> {
     const insight = await this.aiInsightRepository.findOne({
       where: { transactionId },
     });
 
-    return insight ? this.toRecord(insight) : null;
+    return insight ? this.toDomain(insight) : null;
   }
 
-  async upsertByTransactionId(input: UpsertAiInsightRecord): Promise<void> {
-    await this.aiInsightRepository.upsert(input, ['transactionId']);
+  async upsertByTransactionId(input: AiInsight): Promise<void> {
+    await this.aiInsightRepository.upsert(input.toSnapshot(), ['transactionId']);
   }
 
-  private toRecord(insight: AiInsightEntity): AiInsightRecord {
-    return {
+  private toDomain(insight: AiInsightEntity): AiInsight {
+    return AiInsight.restore({
       id: insight.id,
       transactionId: insight.transactionId,
       type: insight.type,
@@ -51,6 +48,6 @@ export class TypeOrmAiInsightsRepository implements AiInsightsRepository {
       explanation: insight.explanation,
       createdAt: insight.createdAt,
       updatedAt: insight.updatedAt,
-    };
+    });
   }
 }

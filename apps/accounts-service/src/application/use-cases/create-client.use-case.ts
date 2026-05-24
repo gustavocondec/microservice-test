@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
 import { KafkaTopics, type ClientCreatedPayload, type DomainEvent } from '@app/contracts';
+import { Client } from '../../domain/entities/client';
 import { DuplicateClientEmailError } from '../../domain/errors/duplicate-client-email.error';
 import { type AccountsEventsPort } from '../ports/accounts-events.port';
-import { type ClientRecord, type ClientsRepository } from '../ports/clients.repository';
+import { type ClientsRepository } from '../ports/clients.repository';
 
 export interface CreateClientInput {
   name: string;
@@ -15,7 +16,7 @@ export class CreateClientUseCase {
     private readonly accountsEventsPublisher: AccountsEventsPort,
   ) {}
 
-  async execute(input: CreateClientInput): Promise<ClientRecord> {
+  async execute(input: CreateClientInput): Promise<Client> {
     const email = input.email.toLowerCase();
     const existingClient = await this.clientRepository.findByEmail(email);
 
@@ -23,28 +24,29 @@ export class CreateClientUseCase {
       throw new DuplicateClientEmailError();
     }
 
-    const client = await this.clientRepository.create({
+    const client = Client.create({
       id: randomUUID(),
       name: input.name,
       email,
     });
+    const savedClient = await this.clientRepository.save(client);
 
     const event: DomainEvent<ClientCreatedPayload> = {
       metadata: {
         eventId: randomUUID(),
         eventType: KafkaTopics.ClientCreated,
         occurredAt: new Date().toISOString(),
-        correlationId: client.id,
+        correlationId: savedClient.id,
       },
       payload: {
-        clientId: client.id,
-        name: client.name,
-        email: client.email,
+        clientId: savedClient.id,
+        name: savedClient.name,
+        email: savedClient.email,
       },
     };
 
     await this.accountsEventsPublisher.publish(KafkaTopics.ClientCreated, event);
 
-    return client;
+    return savedClient;
   }
 }
