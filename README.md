@@ -195,9 +195,10 @@ docker compose up --build
 Modo desarrollo, con el código local montado en los contenedores y reinicio automático al cambiar archivos `.ts`:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+npm run docker:dev
 ```
 
+Este script levanta todo el entorno local usando `docker-compose.yml` y `docker-compose.dev.yml`.
 Después del primer build en modo desarrollo, los cambios de código deberían tomarse al guardar sin reconstruir la imagen. Si cambias dependencias en `package.json`, vuelve a ejecutar el comando con `--build`.
 
 Servicios expuestos:
@@ -219,7 +220,13 @@ Bases de datos:
 - `transactions-db`: `localhost:5434`
 - `ai-db`: `localhost:5435`
 
-Para detener y limpiar:
+Para detener sin borrar los datos de las bases:
+
+```bash
+docker compose down
+```
+
+Para detener y limpiar incluyendo volúmenes:
 
 ```bash
 docker compose down -v
